@@ -629,11 +629,33 @@
       transform: translateY(0);
     }
 
+    .point-overlay.awarded {
+      background: rgba(255, 241, 168, .95);
+    }
+
     .point-title {
       margin: 0;
       text-align: center;
       font-size: clamp(28px, 4.2vw, 66px);
       font-weight: 1000;
+    }
+
+    .point-feedback {
+      min-height: 72px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--green-dark);
+      font-size: clamp(26px, 4vw, 64px);
+      font-weight: 1000;
+      opacity: 0;
+      transform: scale(.86);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .point-feedback.show {
+      opacity: 1;
+      transform: scale(1);
     }
 
     .point-team-list {
@@ -654,6 +676,15 @@
       font-size: clamp(22px, 2.8vw, 42px);
       font-weight: 1000;
       overflow-wrap: anywhere;
+    }
+
+    .point-team-btn.selected {
+      background: #9ed48e;
+      transform: scale(1.04);
+    }
+
+    .point-team-btn:disabled {
+      cursor: default;
     }
 
     .award-screen {
@@ -903,6 +934,9 @@
         <div class="menu-actions">
           <button id="resetBtn" class="small-btn" type="button">전체 초기화</button>
           <button id="shuffleSongsBtn" class="small-btn" type="button">셔플</button>
+          <button id="exportSongsBtn" class="small-btn" type="button">저장값 내보내기</button>
+          <button id="importSongsBtn" class="small-btn" type="button">저장값 불러오기</button>
+          <input id="importSongsInput" class="sr-only" type="file" accept="application/json,.json">
         </div>
       </div>
       <div class="menu-panel">
@@ -966,7 +1000,8 @@
     </section>
 
     <div id="pointOverlay" class="point-overlay" aria-label="점수 줄 팀 선택">
-      <h2 class="point-title">점수 줄 팀을 고르세요</h2>
+      <h2 id="pointTitle" class="point-title">점수 줄 팀을 고르세요</h2>
+      <div id="pointFeedback" class="point-feedback" aria-live="polite"></div>
       <div id="pointTeamList" class="point-team-list"></div>
     </div>
 
@@ -1140,6 +1175,20 @@
       });
     }
 
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function dataUrlToBlob(dataUrl) {
+      const response = await fetch(dataUrl);
+      return response.blob();
+    }
+
     async function clearAudioStore() {
       const db = await openDb();
       return new Promise((resolve, reject) => {
@@ -1157,7 +1206,7 @@
     function showScreen(name) {
       Object.values(screens).forEach((screen) => screen.classList.remove('active'));
       screens[name].classList.add('active');
-      $('pointOverlay').classList.remove('show');
+      hidePointOverlay();
       if (name !== 'detail') {
         stopAudio();
       }
@@ -1371,6 +1420,73 @@
       showToast('입력한 곡 번호를 무작위로 섞었습니다.');
     }
 
+    async function exportSongSettings() {
+      const songs = [];
+      for (const song of metadata) {
+        const audio = await getAudio(song.no);
+        songs.push({
+          ...song,
+          audioDataUrl: audio ? await blobToDataUrl(audio) : '',
+          audioType: audio ? audio.type : song.mimeType
+        });
+      }
+
+      const payload = {
+        app: 'fruit-music-guess',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        songs
+      };
+      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      const date = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+      anchor.href = url;
+      anchor.download = `음악맞추기_저장값_${date}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      showToast('저장값 파일을 만들었습니다.');
+    }
+
+    async function importSongSettings(file) {
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      if (!payload || payload.app !== 'fruit-music-guess' || !Array.isArray(payload.songs)) {
+        throw new Error('지원하지 않는 저장값 파일입니다.');
+      }
+
+      const nextAudio = {};
+      metadata = Array.from({ length: SONG_COUNT }, (_, index) => {
+        const no = index + 1;
+        const saved = payload.songs.find((song) => Number(song.no) === no) || {};
+        if (saved.audioDataUrl) {
+          nextAudio[no] = saved.audioDataUrl;
+        }
+        return {
+          ...defaultSong(no),
+          answer: saved.answer || '',
+          fileName: saved.fileName || '',
+          mimeType: saved.mimeType || saved.audioType || '',
+          duration: Number(saved.duration) || 0,
+          highlight1: Number(saved.highlight1) || 0,
+          highlight2: Number(saved.highlight2) || 0,
+          updatedAt: Date.now()
+        };
+      });
+
+      const audioMap = {};
+      for (const [no, dataUrl] of Object.entries(nextAudio)) {
+        audioMap[no] = await dataUrlToBlob(dataUrl);
+      }
+
+      await replaceAudioMap(audioMap);
+      saveMetadata();
+      renderMenu();
+      showToast('저장값을 불러왔습니다.');
+    }
+
     async function handleFileSelection(no, file) {
       const duration = await readAudioDuration(file);
       const highlights = pickHighlights(duration);
@@ -1439,15 +1555,19 @@
 
     function showPointOverlay() {
       renderPointTeams();
+      $('pointTitle').textContent = '점수 줄 팀을 고르세요';
+      $('pointFeedback').textContent = '';
+      $('pointFeedback').classList.remove('show');
+      $('pointOverlay').classList.remove('awarded');
       $('pointOverlay').classList.add('show');
       clearTimeout(pointOverlayTimer);
     }
 
-    function hidePointOverlaySoon() {
+    function hidePointOverlay(delay = 0) {
       clearTimeout(pointOverlayTimer);
       pointOverlayTimer = setTimeout(() => {
         $('pointOverlay').classList.remove('show');
-      }, 3000);
+      }, delay);
     }
 
     function awardPoint(teamIndex) {
@@ -1455,8 +1575,16 @@
       if (!team) return;
       team.score += POINT_VALUE;
       saveTeams();
+      $('pointOverlay').classList.add('awarded');
+      $('pointTitle').textContent = '점수 지급 완료!';
+      $('pointFeedback').textContent = `${team.name || `${teamIndex + 1}팀`} +${POINT_VALUE}점`;
+      $('pointFeedback').classList.add('show');
+      document.querySelectorAll('.point-team-btn').forEach((button, index) => {
+        button.disabled = true;
+        button.classList.toggle('selected', index === teamIndex);
+      });
       showToast(`${team.name || `${teamIndex + 1}팀`} +${POINT_VALUE}점`);
-      hidePointOverlaySoon();
+      hidePointOverlay(1000);
     }
 
     function resetTeams() {
@@ -1620,6 +1748,12 @@
       $('awardScreen').classList.remove('show');
     });
 
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (!$('pointOverlay').classList.contains('show')) return;
+      hidePointOverlay();
+    });
+
     $('playHighlight1').addEventListener('click', () => playSong('h1'));
     $('playHighlight2').addEventListener('click', () => playSong('h2'));
     $('playFull').addEventListener('click', () => playSong('full'));
@@ -1627,6 +1761,26 @@
     $('shuffleSongsBtn').addEventListener('click', async () => {
       if (!confirm('입력한 정답과 음원 파일의 번호를 무작위로 바꿀까요?')) return;
       await shuffleSongs();
+    });
+
+    $('exportSongsBtn').addEventListener('click', async () => {
+      await exportSongSettings().catch(() => {
+        showToast('저장값 파일을 만들지 못했습니다.');
+      });
+    });
+
+    $('importSongsBtn').addEventListener('click', () => {
+      $('importSongsInput').click();
+    });
+
+    $('importSongsInput').addEventListener('change', async () => {
+      const file = $('importSongsInput').files && $('importSongsInput').files[0];
+      $('importSongsInput').value = '';
+      if (!file) return;
+      if (!confirm('현재 메뉴의 정답과 음원을 저장값 파일 내용으로 바꿀까요?')) return;
+      await importSongSettings(file).catch((error) => {
+        showToast(error.message || '저장값을 불러오지 못했습니다.');
+      });
     });
 
     $('resetBtn').addEventListener('click', async () => {
