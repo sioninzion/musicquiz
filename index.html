@@ -1,0 +1,1649 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>신나는 음악 맞추기 레크레이션</title>
+  <style>
+    :root {
+      --ink: #27211a;
+      --paper: #fffaf0;
+      --paper-dark: #eadfc9;
+      --green: #4f8f4f;
+      --green-dark: #2f6737;
+      --orange: #f3a23b;
+      --red: #e75d4f;
+      --blue: #4e89c7;
+      --shadow: 0 18px 45px rgba(53, 37, 20, .18);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+      background:
+        linear-gradient(rgba(255, 251, 240, .88), rgba(255, 251, 240, .9)),
+        radial-gradient(circle at 15% 15%, rgba(255, 214, 112, .6), transparent 24rem),
+        radial-gradient(circle at 85% 25%, rgba(134, 204, 130, .45), transparent 22rem),
+        #fff8e8;
+      overflow: hidden;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      color: var(--ink);
+    }
+
+    .app {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      padding: clamp(14px, 2.2vw, 30px);
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .topbar {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      height: 60px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: clamp(24px, 3vw, 42px);
+      letter-spacing: 0;
+      line-height: 1.1;
+    }
+
+    .menu-btn,
+    .corner-btn,
+    .small-btn {
+      border: 3px solid var(--ink);
+      background: #fffdf6;
+      border-radius: 8px;
+      box-shadow: 4px 5px 0 rgba(39, 33, 26, .18);
+      font-weight: 900;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+
+    .menu-btn {
+      padding: 10px 20px;
+      min-width: 94px;
+      font-size: 20px;
+    }
+
+    .corner-btn {
+      position: absolute;
+      right: clamp(16px, 2.4vw, 34px);
+      bottom: clamp(16px, 2.4vw, 34px);
+      z-index: 5;
+      padding: 13px 24px;
+      font-size: 22px;
+    }
+
+    .small-btn {
+      padding: 8px 12px;
+      font-size: 15px;
+    }
+
+    .menu-btn:hover,
+    .corner-btn:hover,
+    .small-btn:hover,
+    .play-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 5px 7px 0 rgba(39, 33, 26, .16);
+    }
+
+    .board-wrap {
+      height: calc(100vh - 90px);
+      display: grid;
+      place-items: center;
+      padding: 0 16px 150px;
+    }
+
+    .team-settings {
+      width: min(980px, 94vw);
+      height: calc(100vh - 118px);
+      margin: 10px auto 0;
+      padding: 12px;
+      border: 3px solid var(--ink);
+      border-radius: 8px;
+      background: rgba(255, 253, 246, .96);
+      box-shadow: var(--shadow);
+    }
+
+    .team-settings-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: clamp(18px, 2vw, 28px);
+      font-weight: 1000;
+    }
+
+    .team-counts {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .team-count-btn {
+      min-height: 34px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      background: #fff6d9;
+      font-weight: 1000;
+    }
+
+    .team-count-btn.active {
+      background: #9ed48e;
+    }
+
+    .team-editor-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      max-height: calc(100% - 86px);
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .team-editor {
+      display: grid;
+      gap: 6px;
+      padding: 8px;
+      border: 2px solid rgba(39, 33, 26, .28);
+      border-radius: 8px;
+      background: rgba(255, 250, 232, .8);
+    }
+
+    .top-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      min-width: 190px;
+    }
+
+    .team-name-row {
+      display: grid;
+      grid-template-columns: 52px 1fr;
+      gap: 7px;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .team-name-input,
+    .member-input {
+      width: 100%;
+      min-width: 0;
+      height: 30px;
+      border: 1px solid #9c8669;
+      border-radius: 6px;
+      padding: 0 8px;
+      background: white;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .member-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(2, 30px);
+      gap: 5px;
+    }
+
+    .scorebar {
+      position: absolute;
+      left: clamp(14px, 2.2vw, 30px);
+      right: clamp(14px, 2.2vw, 30px);
+      bottom: clamp(14px, 2.2vw, 30px);
+      z-index: 3;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .score-list {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .score-card {
+      min-height: 62px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 14px;
+      border: 3px solid var(--ink);
+      border-radius: 8px;
+      background: #fffdf6;
+      box-shadow: 4px 5px 0 rgba(39, 33, 26, .14);
+    }
+
+    .score-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: clamp(15px, 1.5vw, 22px);
+      font-weight: 1000;
+    }
+
+    .score-value {
+      font-size: clamp(20px, 2vw, 32px);
+      font-weight: 1000;
+      color: var(--green-dark);
+    }
+
+    .scorebar .corner-btn {
+      position: static;
+      white-space: nowrap;
+    }
+
+    .fruit-grid {
+      width: min(78vw, 1240px);
+      height: min(calc(100vh - 230px), 560px);
+      display: grid;
+      grid-template-columns: repeat(8, minmax(66px, 1fr));
+      grid-template-rows: repeat(4, minmax(74px, 1fr));
+      align-items: center;
+      justify-items: center;
+      gap: clamp(8px, 1.25vw, 22px);
+    }
+
+    .fruit-card {
+      position: relative;
+      width: min(8.2vw, 96px);
+      min-width: 58px;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      place-items: center;
+      background: transparent;
+      border-radius: 50%;
+      transform-origin: center;
+      animation: fruitIn .45s ease both;
+    }
+
+    .fruit-card.zooming {
+      z-index: 10;
+      animation: zoomFruit .48s cubic-bezier(.18, .8, .2, 1) forwards;
+    }
+
+    .fruit-emoji {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: clamp(46px, 6vw, 88px);
+      line-height: 1;
+      filter: saturate(1.08) drop-shadow(0 10px 10px rgba(75, 49, 18, .16));
+      transition: filter .18s ease, transform .18s ease;
+    }
+
+    .fruit-card.unset .fruit-emoji {
+      filter: grayscale(1) saturate(0) contrast(.9) opacity(.52) drop-shadow(0 8px 8px rgba(0, 0, 0, .1));
+    }
+
+    .fruit-card:hover .fruit-emoji {
+      transform: scale(1.08) rotate(-2deg);
+    }
+
+    .fruit-number {
+      position: relative;
+      z-index: 1;
+      width: clamp(28px, 3.3vw, 44px);
+      height: clamp(28px, 3.3vw, 44px);
+      display: grid;
+      place-items: center;
+      border: 3px solid rgba(39, 33, 26, .9);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .84);
+      box-shadow: 0 4px 0 rgba(39, 33, 26, .14);
+      font-size: clamp(15px, 1.9vw, 24px);
+      font-weight: 1000;
+    }
+
+    .menu-actions {
+      display: grid;
+      gap: 8px;
+      justify-items: end;
+    }
+
+    .menu-panel {
+      height: calc(100vh - 98px);
+      width: min(1180px, 94vw);
+      margin: 8px auto 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: clamp(14px, 2vw, 22px);
+      border: 4px solid var(--ink);
+      border-radius: 8px;
+      background: rgba(255, 253, 246, .94);
+      box-shadow: var(--shadow);
+    }
+
+    .menu-head {
+      display: grid;
+      grid-template-columns: 64px minmax(150px, 1fr) minmax(170px, 1fr) 82px 116px;
+      gap: 10px;
+      padding: 0 6px 4px;
+      font-weight: 900;
+      color: #6a5a45;
+    }
+
+    .song-list {
+      overflow: auto;
+      padding-right: 5px;
+    }
+
+    .song-row {
+      display: grid;
+      grid-template-columns: 64px minmax(150px, 1fr) minmax(170px, 1fr) 82px 116px;
+      gap: 10px;
+      align-items: center;
+      min-height: 54px;
+      padding: 7px 6px;
+      border-bottom: 1px dashed rgba(39, 33, 26, .22);
+    }
+
+    .song-no {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border: 3px solid var(--ink);
+      border-radius: 50%;
+      background: var(--paper);
+      font-weight: 1000;
+    }
+
+    .answer-input {
+      width: 100%;
+      min-width: 0;
+      height: 40px;
+      border: 2px solid #9c8669;
+      border-radius: 8px;
+      padding: 0 12px;
+      background: white;
+      font-weight: 800;
+    }
+
+    .file-cell {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .file-label {
+      display: inline-grid;
+      place-items: center;
+      height: 38px;
+      padding: 0 12px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      background: #f8df8a;
+      font-weight: 900;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .file-label input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .file-name {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      color: #695943;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .status-pill {
+      justify-self: start;
+      min-width: 86px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 900;
+      color: white;
+      background: #8c8c8c;
+    }
+
+    .status-pill.ready {
+      background: var(--green);
+    }
+
+    .detail-layout {
+      height: calc(100vh - 40px);
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(270px, .72fr);
+      gap: clamp(20px, 5vw, 76px);
+      align-items: center;
+      padding: 0 min(6vw, 80px) 26px;
+    }
+
+    .answer-zone {
+      display: grid;
+      gap: 18px;
+      justify-items: center;
+    }
+
+    .big-fruit {
+      position: relative;
+      width: min(24vw, 230px);
+      min-width: 150px;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      place-items: center;
+      animation: popIn .42s ease both;
+    }
+
+    .big-fruit .fruit-emoji {
+      font-size: clamp(130px, 16vw, 220px);
+    }
+
+    .paper-board {
+      position: relative;
+      width: min(620px, 82vw);
+      min-height: 300px;
+      display: grid;
+      place-items: center;
+      padding: 34px;
+      border: 4px solid var(--ink);
+      border-radius: 8px;
+      background: #fffdf5;
+      box-shadow: var(--shadow);
+      transform: rotate(-.6deg);
+      overflow: hidden;
+    }
+
+    .tape {
+      position: absolute;
+      width: 94px;
+      height: 28px;
+      background: rgba(246, 231, 172, .8);
+      border: 2px solid rgba(39, 33, 26, .42);
+      transform: rotate(-32deg);
+      opacity: .9;
+    }
+
+    .tape.one {
+      left: -18px;
+      top: 26px;
+    }
+
+    .tape.two {
+      right: -14px;
+      bottom: 30px;
+      transform: rotate(25deg);
+    }
+
+    .answer-text {
+      width: 100%;
+      max-width: 520px;
+      text-align: center;
+      font-size: clamp(34px, 5vw, 78px);
+      line-height: 1.15;
+      font-weight: 1000;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
+    .cover-paper {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      border: 0;
+      background:
+        linear-gradient(120deg, rgba(255,255,255,.36), transparent 35%),
+        #f6ecd5;
+      font-size: clamp(34px, 4.6vw, 68px);
+      font-weight: 1000;
+      transform-origin: 18% 0;
+      transition: transform .75s cubic-bezier(.28, .86, .28, 1), opacity .55s ease;
+    }
+
+    .paper-board.revealed .cover-paper {
+      transform: translateY(126%) rotate(16deg);
+      opacity: .35;
+      pointer-events: none;
+    }
+
+    .award-point-btn {
+      min-width: min(360px, 70vw);
+      padding: 15px 24px;
+      border: 4px solid var(--ink);
+      border-radius: 8px;
+      background: #9ed48e;
+      box-shadow: 5px 6px 0 rgba(39, 33, 26, .16);
+      font-size: clamp(20px, 2.6vw, 34px);
+      font-weight: 1000;
+      opacity: 0;
+      transform: translateY(42px);
+      pointer-events: none;
+      transition: opacity .28s ease, transform .28s ease;
+    }
+
+    .award-point-btn.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .play-panel {
+      display: grid;
+      gap: 30px;
+      align-content: center;
+    }
+
+    .play-btn {
+      display: grid;
+      grid-template-columns: 76px 1fr;
+      align-items: center;
+      gap: 16px;
+      min-height: 86px;
+      padding: 12px 22px 12px 14px;
+      border: 4px solid var(--ink);
+      border-radius: 8px;
+      background: #fffdf6;
+      box-shadow: 5px 6px 0 rgba(39, 33, 26, .16);
+      text-align: left;
+      font-size: clamp(18px, 2.2vw, 30px);
+      font-weight: 1000;
+    }
+
+    .play-icon {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border: 4px solid var(--ink);
+      border-radius: 50%;
+      background: #f8df8a;
+      font-size: 28px;
+    }
+
+    .play-btn:disabled {
+      cursor: not-allowed;
+      opacity: .43;
+      filter: grayscale(1);
+      transform: none;
+    }
+
+    .point-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 12;
+      display: grid;
+      align-content: center;
+      gap: 28px;
+      padding: 34px;
+      background: rgba(255, 248, 232, .92);
+      transform: translateY(105%);
+      transition: transform .38s cubic-bezier(.22, .8, .26, 1);
+    }
+
+    .point-overlay.show {
+      transform: translateY(0);
+    }
+
+    .point-title {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(28px, 4.2vw, 66px);
+      font-weight: 1000;
+    }
+
+    .point-team-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      width: min(1120px, 94vw);
+      margin: 0 auto;
+    }
+
+    .point-team-btn {
+      min-height: 112px;
+      padding: 18px;
+      border: 4px solid var(--ink);
+      border-radius: 8px;
+      background: #fffdf6;
+      box-shadow: 6px 7px 0 rgba(39, 33, 26, .16);
+      font-size: clamp(22px, 2.8vw, 42px);
+      font-weight: 1000;
+      overflow-wrap: anywhere;
+    }
+
+    .award-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 14;
+      display: none;
+      align-content: center;
+      justify-items: center;
+      gap: 22px;
+      padding: 36px;
+      background:
+        linear-gradient(rgba(255, 250, 236, .96), rgba(255, 250, 236, .96)),
+        radial-gradient(circle at 50% 25%, rgba(243, 162, 59, .38), transparent 26rem);
+    }
+
+    .award-screen.show {
+      display: grid;
+    }
+
+    .award-title {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(32px, 5vw, 82px);
+      font-weight: 1000;
+    }
+
+    .podium {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(170px, 1fr));
+      align-items: end;
+      gap: clamp(12px, 2vw, 26px);
+      width: min(980px, 94vw);
+    }
+
+    .podium-card {
+      display: none;
+      min-height: 210px;
+      padding: 22px;
+      border: 4px solid var(--ink);
+      border-radius: 8px;
+      background: #fffdf6;
+      box-shadow: var(--shadow);
+      text-align: center;
+      animation: popIn .32s ease both;
+    }
+
+    .podium-card.show {
+      display: grid;
+      align-content: center;
+      gap: 8px;
+    }
+
+    .podium-card.rank-1 {
+      min-height: 300px;
+      background: #fff1a8;
+      order: 2;
+    }
+
+    .podium-card.rank-2 {
+      min-height: 255px;
+      background: #e7edf3;
+      order: 1;
+    }
+
+    .podium-card.rank-3 {
+      min-height: 225px;
+      background: #f6c99c;
+      order: 3;
+    }
+
+    .rank-label {
+      font-size: clamp(26px, 3.6vw, 56px);
+      font-weight: 1000;
+    }
+
+    .rank-team {
+      font-size: clamp(20px, 2.7vw, 42px);
+      font-weight: 1000;
+      overflow-wrap: anywhere;
+    }
+
+    .rank-score {
+      color: var(--green-dark);
+      font-size: clamp(18px, 2vw, 30px);
+      font-weight: 1000;
+    }
+
+    .toast {
+      position: absolute;
+      left: 50%;
+      bottom: 24px;
+      z-index: 8;
+      max-width: min(680px, 88vw);
+      padding: 12px 18px;
+      border: 3px solid var(--ink);
+      border-radius: 8px;
+      background: #fffdf6;
+      box-shadow: var(--shadow);
+      font-weight: 900;
+      text-align: center;
+      transform: translate(-50%, 120%);
+      opacity: 0;
+      transition: transform .22s ease, opacity .22s ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @keyframes fruitIn {
+      from { opacity: 0; transform: translateY(14px) scale(.94); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes zoomFruit {
+      to { transform: scale(2.9); opacity: 0; }
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(.85) rotate(-5deg); }
+      to { opacity: 1; transform: scale(1) rotate(0); }
+    }
+
+    @media (max-width: 900px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        min-height: 100vh;
+        height: auto;
+        overflow: visible;
+      }
+
+      .screen {
+        position: relative;
+        min-height: 100vh;
+      }
+
+      .fruit-grid {
+        height: auto;
+        width: min(92vw, 520px);
+        grid-template-columns: repeat(4, minmax(64px, 1fr));
+        grid-template-rows: none;
+      }
+
+      .fruit-card {
+        width: min(17vw, 86px);
+      }
+
+      .detail-layout {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+        padding: 12px 16px 94px;
+      }
+
+      .play-panel {
+        gap: 14px;
+      }
+
+      .team-settings {
+        width: 100%;
+        height: auto;
+        margin-top: 12px;
+      }
+
+      .team-editor-list {
+        grid-template-columns: 1fr;
+        max-height: none;
+      }
+
+      .member-grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: none;
+      }
+
+      .scorebar {
+        position: static;
+        grid-template-columns: 1fr;
+        margin-top: 12px;
+      }
+
+      .score-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .menu-panel {
+        height: auto;
+        min-height: calc(100vh - 110px);
+      }
+
+      .menu-head {
+        display: none;
+      }
+
+      .song-row {
+        grid-template-columns: 46px 1fr;
+      }
+
+      .file-cell,
+      .status-pill,
+      .small-btn {
+        grid-column: 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section id="gameScreen" class="screen active" aria-label="게임 화면">
+      <div class="topbar">
+        <button id="openMenuBtn" class="menu-btn" type="button">메뉴</button>
+        <h1 class="title">신나는 음악 맞추기 레크레이션</h1>
+        <div class="top-actions">
+          <button id="openTeamBtn" class="menu-btn" type="button">팀 설정</button>
+        </div>
+      </div>
+      <div class="board-wrap">
+        <div id="fruitGrid" class="fruit-grid" aria-label="과일 선택판"></div>
+      </div>
+      <div class="scorebar" aria-label="팀 점수판">
+        <div id="scoreList" class="score-list"></div>
+        <button id="finishGameBtn" class="corner-btn" type="button">게임 끝내기</button>
+      </div>
+    </section>
+
+    <section id="menuScreen" class="screen" aria-label="메뉴 화면">
+      <div class="topbar">
+        <span aria-hidden="true"></span>
+        <h1 class="title">메뉴</h1>
+        <div class="menu-actions">
+          <button id="resetBtn" class="small-btn" type="button">전체 초기화</button>
+          <button id="shuffleSongsBtn" class="small-btn" type="button">셔플</button>
+        </div>
+      </div>
+      <div class="menu-panel">
+        <div class="menu-head" aria-hidden="true">
+          <span>번호</span>
+          <span>정답</span>
+          <span>음원 파일</span>
+          <span>지우기</span>
+          <span>상태</span>
+        </div>
+        <div id="songList" class="song-list"></div>
+      </div>
+      <button id="backToGameBtn" class="corner-btn" type="button">뒤로</button>
+    </section>
+
+    <section id="teamScreen" class="screen" aria-label="팀 설정 화면">
+      <div class="topbar">
+        <span aria-hidden="true"></span>
+        <h1 class="title">팀 설정</h1>
+        <button id="resetTeamsBtn" class="small-btn" type="button">전체 초기화</button>
+      </div>
+      <aside class="team-settings" aria-label="팀 설정">
+        <div class="team-settings-head">
+          <span>팀 수와 팀원을 정하세요</span>
+          <span>점수는 게임 화면에 저장됩니다</span>
+        </div>
+        <div id="teamCountButtons" class="team-counts" aria-label="팀 수 선택"></div>
+        <div id="teamEditorList" class="team-editor-list"></div>
+      </aside>
+      <button id="backFromTeamBtn" class="corner-btn" type="button">뒤로</button>
+    </section>
+
+    <section id="detailScreen" class="screen" aria-label="세부 게임 화면">
+      <div class="detail-layout">
+        <div class="answer-zone">
+          <div id="bigFruit" class="big-fruit" aria-hidden="true"></div>
+          <div id="paperBoard" class="paper-board">
+            <span class="tape one" aria-hidden="true"></span>
+            <span class="tape two" aria-hidden="true"></span>
+            <div id="answerText" class="answer-text"></div>
+            <button id="coverPaper" class="cover-paper" type="button">정답 공개</button>
+          </div>
+          <button id="awardPointBtn" class="award-point-btn" type="button">점수 주기</button>
+        </div>
+        <div class="play-panel">
+          <button id="playHighlight1" class="play-btn" type="button">
+            <span class="play-icon">▶</span>
+            <span>하이라이트 1 듣기</span>
+          </button>
+          <button id="playHighlight2" class="play-btn" type="button">
+            <span class="play-icon">▶</span>
+            <span>하이라이트 2 듣기</span>
+          </button>
+          <button id="playFull" class="play-btn" type="button">
+            <span class="play-icon">▶</span>
+            <span>전곡 듣기</span>
+          </button>
+        </div>
+      </div>
+      <button id="exitDetailBtn" class="corner-btn" type="button">나가기</button>
+    </section>
+
+    <div id="pointOverlay" class="point-overlay" aria-label="점수 줄 팀 선택">
+      <h2 class="point-title">점수 줄 팀을 고르세요</h2>
+      <div id="pointTeamList" class="point-team-list"></div>
+    </div>
+
+    <section id="awardScreen" class="award-screen" aria-label="시상 화면">
+      <h2 class="award-title">최종 시상</h2>
+      <div id="podium" class="podium"></div>
+      <button id="closeAwardBtn" class="corner-btn" type="button">돌아가기</button>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <audio id="player"></audio>
+  </div>
+
+  <script>
+    const SONG_COUNT = 32;
+    const HIGHLIGHT_SECONDS = 4;
+    const DB_NAME = 'fruit-music-guess-db';
+    const DB_VERSION = 1;
+    const META_KEY = 'fruitMusicGuessMetaV1';
+    const TEAM_KEY = 'fruitMusicGuessTeamsV1';
+    const POINT_VALUE = 5;
+    const FRUITS = [
+      '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓',
+      '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥝', '🥥'
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    const screens = {
+      game: $('gameScreen'),
+      menu: $('menuScreen'),
+      team: $('teamScreen'),
+      detail: $('detailScreen')
+    };
+
+    const player = $('player');
+    let dbPromise;
+    let metadata = loadMetadata();
+    let teamState = loadTeamState();
+    let currentSongNo = null;
+    let currentAudioUrl = null;
+    let clipTimer = null;
+    let pointOverlayTimer = null;
+    let awardTimer = null;
+    let fruitAssignments = makeFruitAssignments();
+
+    function defaultSong(no) {
+      return {
+        no,
+        answer: '',
+        fileName: '',
+        mimeType: '',
+        duration: 0,
+        highlight1: 0,
+        highlight2: 0,
+        updatedAt: 0
+      };
+    }
+
+    function loadMetadata() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(META_KEY) || '[]');
+        return Array.from({ length: SONG_COUNT }, (_, index) => ({
+          ...defaultSong(index + 1),
+          ...(parsed[index] || {})
+        }));
+      } catch {
+        return Array.from({ length: SONG_COUNT }, (_, index) => defaultSong(index + 1));
+      }
+    }
+
+    function saveMetadata() {
+      localStorage.setItem(META_KEY, JSON.stringify(metadata));
+      renderBoard();
+      renderSongStatuses();
+    }
+
+    function defaultTeams() {
+      return {
+        count: 4,
+        teams: Array.from({ length: 6 }, (_, index) => ({
+          name: `${index + 1}팀`,
+          members: Array.from({ length: 10 }, () => ''),
+          score: 0
+        }))
+      };
+    }
+
+    function loadTeamState() {
+      const fallback = defaultTeams();
+      try {
+        const parsed = JSON.parse(localStorage.getItem(TEAM_KEY) || 'null');
+        if (!parsed) return fallback;
+        const count = Math.min(6, Math.max(3, Number(parsed.count) || 4));
+        const teams = fallback.teams.map((team, index) => ({
+          ...team,
+          ...(parsed.teams && parsed.teams[index] ? parsed.teams[index] : {}),
+          members: Array.from({ length: 10 }, (_, memberIndex) =>
+            parsed.teams && parsed.teams[index] && parsed.teams[index].members
+              ? (parsed.teams[index].members[memberIndex] || '')
+              : ''
+          ),
+          score: Number(parsed.teams && parsed.teams[index] ? parsed.teams[index].score : 0) || 0
+        }));
+        return { count, teams };
+      } catch {
+        return fallback;
+      }
+    }
+
+    function saveTeams() {
+      localStorage.setItem(TEAM_KEY, JSON.stringify(teamState));
+      renderScoreboard();
+      renderPointTeams();
+    }
+
+    function openDb() {
+      if (!dbPromise) {
+        dbPromise = new Promise((resolve, reject) => {
+          const request = indexedDB.open(DB_NAME, DB_VERSION);
+          request.onupgradeneeded = () => {
+            request.result.createObjectStore('songs');
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+      return dbPromise;
+    }
+
+    async function putAudio(no, file) {
+      const db = await openDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('songs', 'readwrite');
+        tx.objectStore('songs').put(file, String(no));
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    async function getAudio(no) {
+      const db = await openDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('songs', 'readonly');
+        const request = tx.objectStore('songs').get(String(no));
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function deleteAudio(no) {
+      const db = await openDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('songs', 'readwrite');
+        tx.objectStore('songs').delete(String(no));
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    async function replaceAudioMap(audioMap) {
+      const db = await openDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('songs', 'readwrite');
+        const store = tx.objectStore('songs');
+        store.clear();
+        Object.entries(audioMap).forEach(([no, blob]) => {
+          if (blob) store.put(blob, String(no));
+        });
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    async function clearAudioStore() {
+      const db = await openDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('songs', 'readwrite');
+        tx.objectStore('songs').clear();
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    function isReady(song) {
+      return Boolean(song.answer.trim() && song.fileName);
+    }
+
+    function showScreen(name) {
+      Object.values(screens).forEach((screen) => screen.classList.remove('active'));
+      screens[name].classList.add('active');
+      $('pointOverlay').classList.remove('show');
+      if (name !== 'detail') {
+        stopAudio();
+      }
+    }
+
+    function makeFruitAssignments() {
+      const doubled = [...FRUITS, ...FRUITS];
+      for (let i = doubled.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [doubled[i], doubled[j]] = [doubled[j], doubled[i]];
+      }
+      return doubled.map((fruit, index) => ({ no: index + 1, fruit }));
+    }
+
+    function activeTeams() {
+      return teamState.teams.slice(0, teamState.count);
+    }
+
+    function renderTeamSettings() {
+      const countWrap = $('teamCountButtons');
+      const editorWrap = $('teamEditorList');
+      countWrap.innerHTML = '';
+      editorWrap.innerHTML = '';
+
+      [3, 4, 5, 6].forEach((count) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `team-count-btn ${teamState.count === count ? 'active' : ''}`;
+        button.textContent = `${count}팀`;
+        button.addEventListener('click', () => {
+          teamState.count = count;
+          saveTeams();
+          renderTeamSettings();
+        });
+        countWrap.appendChild(button);
+      });
+
+      activeTeams().forEach((team, teamIndex) => {
+        const editor = document.createElement('div');
+        editor.className = 'team-editor';
+        editor.innerHTML = `
+          <label class="team-name-row">
+            <span>팀명</span>
+            <input class="team-name-input" type="text" value="${escapeAttr(team.name)}" aria-label="${teamIndex + 1}팀 이름">
+          </label>
+          <div class="member-grid"></div>
+        `;
+
+        const nameInput = editor.querySelector('.team-name-input');
+        const memberGrid = editor.querySelector('.member-grid');
+
+        nameInput.addEventListener('input', () => {
+          team.name = nameInput.value;
+          saveTeams();
+        });
+
+        team.members.forEach((member, memberIndex) => {
+          const input = document.createElement('input');
+          input.className = 'member-input';
+          input.type = 'text';
+          input.value = member;
+          input.placeholder = `${memberIndex + 1}`;
+          input.setAttribute('aria-label', `${teamIndex + 1}팀 ${memberIndex + 1}번 팀원`);
+          input.addEventListener('input', () => {
+            team.members[memberIndex] = input.value;
+            saveTeams();
+          });
+          memberGrid.appendChild(input);
+        });
+
+        editorWrap.appendChild(editor);
+      });
+    }
+
+    function renderScoreboard() {
+      const scoreList = $('scoreList');
+      const teams = activeTeams();
+      scoreList.style.gridTemplateColumns = `repeat(${teams.length}, minmax(0, 1fr))`;
+      scoreList.innerHTML = '';
+      teams.forEach((team) => {
+        const card = document.createElement('div');
+        card.className = 'score-card';
+        card.innerHTML = `
+          <span class="score-name">${escapeHtml(team.name.trim() || '이름 없음')}</span>
+          <span class="score-value">${team.score}점</span>
+        `;
+        scoreList.appendChild(card);
+      });
+    }
+
+    function renderPointTeams() {
+      const list = $('pointTeamList');
+      list.innerHTML = '';
+      activeTeams().forEach((team, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'point-team-btn';
+        button.textContent = team.name.trim() || `${index + 1}팀`;
+        button.addEventListener('click', () => awardPoint(index));
+        list.appendChild(button);
+      });
+    }
+
+    function renderBoard() {
+      const grid = $('fruitGrid');
+      grid.innerHTML = '';
+      fruitAssignments.forEach(({ no, fruit }, index) => {
+        const song = metadata[no - 1];
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `fruit-card ${isReady(song) ? 'ready' : 'unset'}`;
+        button.style.animationDelay = `${index * 18}ms`;
+        button.setAttribute('aria-label', `${no}번 과일`);
+        button.innerHTML = `
+          <span class="fruit-emoji">${fruit}</span>
+          <span class="fruit-number">${no}</span>
+        `;
+        button.addEventListener('click', () => openDetail(no, fruit, button));
+        grid.appendChild(button);
+      });
+    }
+
+    function renderMenu() {
+      const list = $('songList');
+      list.innerHTML = '';
+      metadata.forEach((song) => {
+        const row = document.createElement('div');
+        row.className = 'song-row';
+        row.innerHTML = `
+          <div class="song-no">${song.no}</div>
+          <input class="answer-input" type="text" value="${escapeAttr(song.answer)}" placeholder="정답 입력" aria-label="${song.no}번 정답">
+          <div class="file-cell">
+            <label class="file-label">
+              파일선택
+              <input type="file" accept="audio/*" aria-label="${song.no}번 음원 파일">
+            </label>
+            <div class="file-name">${song.fileName ? escapeHtml(song.fileName) : '선택된 파일 없음'}</div>
+          </div>
+          <button class="small-btn" type="button">지우기</button>
+          <div class="status-pill ${isReady(song) ? 'ready' : ''}" data-status="${song.no}">
+            ${isReady(song) ? '준비됨' : '미설정'}
+          </div>
+        `;
+
+        const input = row.querySelector('.answer-input');
+        const fileInput = row.querySelector('input[type="file"]');
+        const clearButton = row.querySelector('.small-btn');
+
+        input.addEventListener('input', () => {
+          song.answer = input.value;
+          song.updatedAt = Date.now();
+          saveMetadata();
+        });
+
+        fileInput.addEventListener('change', async () => {
+          const file = fileInput.files && fileInput.files[0];
+          if (!file) return;
+          await handleFileSelection(song.no, file);
+          renderMenu();
+        });
+
+        clearButton.addEventListener('click', async () => {
+          await deleteAudio(song.no);
+          metadata[song.no - 1] = defaultSong(song.no);
+          saveMetadata();
+          renderMenu();
+          showToast(`${song.no}번을 비웠습니다.`);
+        });
+
+        list.appendChild(row);
+      });
+    }
+
+    function renderSongStatuses() {
+      metadata.forEach((song) => {
+        const status = document.querySelector(`[data-status="${song.no}"]`);
+        if (!status) return;
+        status.classList.toggle('ready', isReady(song));
+        status.textContent = isReady(song) ? '준비됨' : '미설정';
+      });
+    }
+
+    async function shuffleSongs() {
+      const originalAudio = {};
+      await Promise.all(
+        metadata.map(async (song) => {
+          originalAudio[song.no] = await getAudio(song.no);
+        })
+      );
+
+      const shuffled = metadata.map((song) => ({ ...song }));
+      for (let i = shuffled.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      const nextAudio = {};
+      metadata = shuffled.map((song, index) => {
+        const nextNo = index + 1;
+        nextAudio[nextNo] = originalAudio[song.no];
+        return {
+          ...song,
+          no: nextNo,
+          updatedAt: Date.now()
+        };
+      });
+
+      await replaceAudioMap(nextAudio);
+      saveMetadata();
+      renderMenu();
+      showToast('입력한 곡 번호를 무작위로 섞었습니다.');
+    }
+
+    async function handleFileSelection(no, file) {
+      const duration = await readAudioDuration(file);
+      const highlights = pickHighlights(duration);
+      await putAudio(no, file);
+      metadata[no - 1] = {
+        ...metadata[no - 1],
+        fileName: file.name,
+        mimeType: file.type,
+        duration,
+        highlight1: highlights[0],
+        highlight2: highlights[1],
+        updatedAt: Date.now()
+      };
+      saveMetadata();
+      showToast(`${no}번 음원에서 약 4초 하이라이트 2개를 준비했습니다.`);
+    }
+
+    function readAudioDuration(file) {
+      return new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const audio = new Audio();
+        audio.preload = 'metadata';
+        audio.onloadedmetadata = () => {
+          const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+          URL.revokeObjectURL(url);
+          resolve(duration);
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(0);
+        };
+        audio.src = url;
+      });
+    }
+
+    function pickHighlights(duration) {
+      if (!duration || duration <= HIGHLIGHT_SECONDS + 1) return [0, 0];
+      const maxStart = Math.max(0, duration - HIGHLIGHT_SECONDS - .25);
+      const first = Math.min(maxStart, Math.max(0, duration * .28));
+      const second = Math.min(maxStart, Math.max(first + HIGHLIGHT_SECONDS + 2, duration * .62));
+      return [Number(first.toFixed(2)), Number(second.toFixed(2))];
+    }
+
+    function openDetail(no, fruit, sourceButton) {
+      currentSongNo = no;
+      sourceButton.classList.add('zooming');
+      setTimeout(() => sourceButton.classList.remove('zooming'), 520);
+      setTimeout(() => {
+        const song = metadata[no - 1];
+        $('bigFruit').innerHTML = `
+          <span class="fruit-emoji">${fruit}</span>
+          <span class="fruit-number">${no}</span>
+        `;
+        $('answerText').textContent = song.answer.trim() || '정답 미입력';
+        $('paperBoard').classList.remove('revealed');
+        $('awardPointBtn').classList.remove('show');
+        updatePlayButtons();
+        showScreen('detail');
+      }, 240);
+    }
+
+    function revealAnswer() {
+      $('paperBoard').classList.add('revealed');
+      $('awardPointBtn').classList.add('show');
+    }
+
+    function showPointOverlay() {
+      renderPointTeams();
+      $('pointOverlay').classList.add('show');
+      clearTimeout(pointOverlayTimer);
+    }
+
+    function hidePointOverlaySoon() {
+      clearTimeout(pointOverlayTimer);
+      pointOverlayTimer = setTimeout(() => {
+        $('pointOverlay').classList.remove('show');
+      }, 3000);
+    }
+
+    function awardPoint(teamIndex) {
+      const team = activeTeams()[teamIndex];
+      if (!team) return;
+      team.score += POINT_VALUE;
+      saveTeams();
+      showToast(`${team.name || `${teamIndex + 1}팀`} +${POINT_VALUE}점`);
+      hidePointOverlaySoon();
+    }
+
+    function resetTeams() {
+      teamState = defaultTeams();
+      saveTeams();
+      renderTeamSettings();
+      showToast('팀 설정과 점수를 초기화했습니다.');
+    }
+
+    function finishGame() {
+      const rankings = [...activeTeams()]
+        .map((team, index) => ({ ...team, originalIndex: index }))
+        .sort((a, b) => b.score - a.score || a.originalIndex - b.originalIndex)
+        .slice(0, 3);
+
+      const podium = $('podium');
+      podium.innerHTML = '';
+      const orderedRanks = [2, 1, 3];
+      orderedRanks.forEach((rank) => {
+        const team = rankings[rank - 1] || { name: `${rank}등 없음`, score: 0 };
+        const card = document.createElement('div');
+        card.className = `podium-card rank-${rank}`;
+        card.innerHTML = `
+          <div class="rank-label">${rank}등</div>
+          <div class="rank-team">${escapeHtml(team.name || '이름 없음')}</div>
+          <div class="rank-score">${team.score}점</div>
+        `;
+        podium.appendChild(card);
+      });
+
+      $('awardScreen').classList.add('show');
+      clearTimeout(awardTimer);
+      const cards = Array.from(podium.querySelectorAll('.podium-card'));
+      [2, 0, 1].forEach((cardIndex, revealIndex) => {
+        awardTimer = setTimeout(() => {
+          cards[cardIndex].classList.add('show');
+        }, revealIndex * 950);
+      });
+    }
+
+    function updatePlayButtons() {
+      const song = metadata[currentSongNo - 1];
+      const enabled = Boolean(song.fileName);
+      $('playHighlight1').disabled = !enabled;
+      $('playHighlight2').disabled = !enabled;
+      $('playFull').disabled = !enabled;
+    }
+
+    async function playSong(mode) {
+      if (!currentSongNo) return;
+      const song = metadata[currentSongNo - 1];
+      if (!song.fileName) {
+        showToast('먼저 메뉴에서 음원 파일을 선택해 주세요.');
+        return;
+      }
+
+      const blob = await getAudio(currentSongNo);
+      if (!blob) {
+        showToast('저장된 음원을 찾지 못했습니다. 메뉴에서 다시 선택해 주세요.');
+        return;
+      }
+
+      stopAudio();
+      currentAudioUrl = URL.createObjectURL(blob);
+      player.src = currentAudioUrl;
+      await waitForPlayerReady();
+
+      const start = mode === 'h1' ? song.highlight1 : mode === 'h2' ? song.highlight2 : 0;
+      player.currentTime = start || 0;
+      await player.play().catch(() => {
+        showToast('재생을 시작하지 못했습니다. 버튼을 한 번 더 눌러 주세요.');
+      });
+
+      if (mode !== 'full') {
+        clipTimer = setTimeout(stopAudio, HIGHLIGHT_SECONDS * 1000);
+      }
+    }
+
+    function waitForPlayerReady() {
+      if (player.readyState >= 1) return Promise.resolve();
+      return new Promise((resolve) => {
+        const done = () => {
+          player.removeEventListener('loadedmetadata', done);
+          player.removeEventListener('error', done);
+          resolve();
+        };
+        player.addEventListener('loadedmetadata', done, { once: true });
+        player.addEventListener('error', done, { once: true });
+      });
+    }
+
+    function stopAudio() {
+      if (clipTimer) {
+        clearTimeout(clipTimer);
+        clipTimer = null;
+      }
+      player.pause();
+      player.removeAttribute('src');
+      player.load();
+      if (currentAudioUrl) {
+        URL.revokeObjectURL(currentAudioUrl);
+        currentAudioUrl = null;
+      }
+    }
+
+    function showToast(message) {
+      const toast = $('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove('show'), 2100);
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value);
+    }
+
+    $('openMenuBtn').addEventListener('click', () => {
+      renderMenu();
+      showScreen('menu');
+    });
+
+    $('openTeamBtn').addEventListener('click', () => {
+      renderTeamSettings();
+      showScreen('team');
+    });
+
+    $('backToGameBtn').addEventListener('click', () => {
+      showScreen('game');
+    });
+
+    $('backFromTeamBtn').addEventListener('click', () => {
+      showScreen('game');
+    });
+
+    $('exitDetailBtn').addEventListener('click', () => {
+      showScreen('game');
+    });
+
+    $('coverPaper').addEventListener('click', () => {
+      revealAnswer();
+    });
+
+    $('awardPointBtn').addEventListener('click', showPointOverlay);
+    $('resetTeamsBtn').addEventListener('click', () => {
+      if (!confirm('팀명, 팀원 이름, 점수를 모두 초기화할까요?')) return;
+      resetTeams();
+    });
+    $('finishGameBtn').addEventListener('click', finishGame);
+    $('closeAwardBtn').addEventListener('click', () => {
+      $('awardScreen').classList.remove('show');
+    });
+
+    $('playHighlight1').addEventListener('click', () => playSong('h1'));
+    $('playHighlight2').addEventListener('click', () => playSong('h2'));
+    $('playFull').addEventListener('click', () => playSong('full'));
+
+    $('shuffleSongsBtn').addEventListener('click', async () => {
+      if (!confirm('입력한 정답과 음원 파일의 번호를 무작위로 바꿀까요?')) return;
+      await shuffleSongs();
+    });
+
+    $('resetBtn').addEventListener('click', async () => {
+      if (!confirm('입력한 정답과 저장된 음원을 모두 지울까요?')) return;
+      await clearAudioStore();
+      metadata = Array.from({ length: SONG_COUNT }, (_, index) => defaultSong(index + 1));
+      saveMetadata();
+      renderMenu();
+      showToast('전체 설정을 초기화했습니다.');
+    });
+
+    player.addEventListener('ended', stopAudio);
+
+    renderTeamSettings();
+    renderScoreboard();
+    renderPointTeams();
+    renderBoard();
+  </script>
+</body>
+</html>
