@@ -15,6 +15,10 @@
       --red: #e75d4f;
       --blue: #4e89c7;
       --shadow: 0 18px 45px rgba(53, 37, 20, .18);
+      --safe-top: 0px;
+      --safe-right: 0px;
+      --safe-bottom: 0px;
+      --safe-left: 0px;
     }
 
     * { box-sizing: border-box; }
@@ -52,7 +56,7 @@
 
     .screen {
       position: absolute;
-      inset: 0;
+      inset: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
       display: none;
       padding: clamp(14px, 2.2vw, 30px);
     }
@@ -336,6 +340,105 @@
       display: grid;
       gap: 8px;
       justify-items: end;
+      transform: translateY(58px);
+    }
+
+    .range-screen {
+      inset: 0;
+    }
+
+    .range-panel {
+      width: min(1180px, 94vw);
+      height: calc(100vh - 134px);
+      margin: 16px auto 0;
+      padding: clamp(14px, 2vw, 22px);
+      border: 4px solid var(--ink);
+      border-radius: 8px;
+      background: rgba(255, 253, 246, .96);
+      box-shadow: var(--shadow);
+    }
+
+    .range-stage {
+      position: relative;
+      height: calc(100% - 58px);
+      min-height: 420px;
+      border: 4px solid rgba(39, 33, 26, .72);
+      border-radius: 8px;
+      background:
+        repeating-linear-gradient(45deg, rgba(39, 33, 26, .07) 0 12px, rgba(255, 255, 255, .35) 12px 24px),
+        #eee2cd;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .range-box {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      display: grid;
+      place-items: center;
+      border: 5px solid var(--green-dark);
+      border-radius: 8px;
+      background: rgba(158, 212, 142, .45);
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .76), 0 12px 28px rgba(39, 33, 26, .18);
+    }
+
+    .range-box-label {
+      padding: 10px 18px;
+      border: 3px solid var(--ink);
+      border-radius: 8px;
+      background: #fffdf6;
+      font-size: clamp(20px, 2.4vw, 36px);
+      font-weight: 1000;
+    }
+
+    .range-move {
+      width: 94px;
+      height: 94px;
+      display: grid;
+      place-items: center;
+      border: 4px solid var(--ink);
+      border-radius: 50%;
+      background: #f8df8a;
+      box-shadow: 4px 5px 0 rgba(39, 33, 26, .16);
+      font-size: 34px;
+      font-weight: 1000;
+      cursor: move;
+    }
+
+    .range-handle {
+      position: absolute;
+      width: 34px;
+      height: 34px;
+      border: 4px solid var(--ink);
+      border-radius: 8px;
+      background: #fffdf6;
+      box-shadow: 3px 4px 0 rgba(39, 33, 26, .18);
+    }
+
+    .range-handle.nw { left: -18px; top: -18px; cursor: nwse-resize; }
+    .range-handle.ne { right: -18px; top: -18px; cursor: nesw-resize; }
+    .range-handle.sw { left: -18px; bottom: -18px; cursor: nesw-resize; }
+    .range-handle.se { right: -18px; bottom: -18px; cursor: nwse-resize; }
+
+    .range-readout {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 16px;
+      min-height: 38px;
+      margin-bottom: 12px;
+      font-size: 15px;
+      font-weight: 900;
+      color: #5c4b36;
+    }
+
+    .range-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 18px;
     }
 
     .menu-panel {
@@ -614,7 +717,7 @@
 
     .point-overlay {
       position: absolute;
-      inset: 0;
+      inset: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
       z-index: 12;
       display: grid;
       align-content: center;
@@ -689,7 +792,7 @@
 
     .award-screen {
       position: absolute;
-      inset: 0;
+      inset: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
       z-index: 14;
       display: none;
       align-content: center;
@@ -887,6 +990,15 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      .range-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .range-value {
+        text-align: left;
+      }
+
       .menu-panel {
         height: auto;
         min-height: calc(100vh - 110px);
@@ -929,7 +1041,7 @@
 
     <section id="menuScreen" class="screen" aria-label="메뉴 화면">
       <div class="topbar">
-        <span aria-hidden="true"></span>
+        <button id="openRangeBtn" class="menu-btn" type="button">게임범위 조정</button>
         <h1 class="title">메뉴</h1>
         <div class="menu-actions">
           <button id="resetBtn" class="small-btn" type="button">전체 초기화</button>
@@ -950,6 +1062,31 @@
         <div id="songList" class="song-list"></div>
       </div>
       <button id="backToGameBtn" class="corner-btn" type="button">뒤로</button>
+    </section>
+
+    <section id="rangeScreen" class="screen range-screen" aria-label="게임범위 조정 화면">
+      <div class="topbar">
+        <span aria-hidden="true"></span>
+        <h1 class="title">게임범위 조정</h1>
+        <span aria-hidden="true"></span>
+      </div>
+      <div class="range-panel">
+        <div id="rangeReadout" class="range-readout"></div>
+        <div id="rangeStage" class="range-stage">
+          <div id="rangeBox" class="range-box">
+            <div class="range-box-label">사용 영역</div>
+            <button id="rangeMove" class="range-move" type="button" aria-label="게임범위 이동">✥</button>
+            <button class="range-handle nw" type="button" data-handle="nw" aria-label="왼쪽 위 모서리"></button>
+            <button class="range-handle ne" type="button" data-handle="ne" aria-label="오른쪽 위 모서리"></button>
+            <button class="range-handle sw" type="button" data-handle="sw" aria-label="왼쪽 아래 모서리"></button>
+            <button class="range-handle se" type="button" data-handle="se" aria-label="오른쪽 아래 모서리"></button>
+          </div>
+        </div>
+        <div class="range-actions">
+          <button id="resetRangeBtn" class="small-btn" type="button">범위 초기화</button>
+        </div>
+      </div>
+      <button id="backFromRangeBtn" class="corner-btn" type="button">뒤로</button>
     </section>
 
     <section id="teamScreen" class="screen" aria-label="팀 설정 화면">
@@ -1022,6 +1159,7 @@
     const DB_VERSION = 1;
     const META_KEY = 'fruitMusicGuessMetaV1';
     const TEAM_KEY = 'fruitMusicGuessTeamsV1';
+    const RANGE_KEY = 'fruitMusicGuessRangeV1';
     const POINT_VALUE = 5;
     const FRUITS = [
       '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓',
@@ -1032,6 +1170,7 @@
     const screens = {
       game: $('gameScreen'),
       menu: $('menuScreen'),
+      range: $('rangeScreen'),
       team: $('teamScreen'),
       detail: $('detailScreen')
     };
@@ -1040,6 +1179,7 @@
     let dbPromise;
     let metadata = loadMetadata();
     let teamState = loadTeamState();
+    let rangeState = loadRangeState();
     let currentSongNo = null;
     let currentAudioUrl = null;
     let clipTimer = null;
@@ -1115,6 +1255,41 @@
       localStorage.setItem(TEAM_KEY, JSON.stringify(teamState));
       renderScoreboard();
       renderPointTeams();
+    }
+
+    function defaultRange() {
+      return { top: 0, right: 0, bottom: 0, left: 0 };
+    }
+
+    function loadRangeState() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(RANGE_KEY) || 'null');
+        if (!parsed) return defaultRange();
+        return {
+          top: clampRange(parsed.top),
+          right: clampRange(parsed.right),
+          bottom: clampRange(parsed.bottom),
+          left: clampRange(parsed.left)
+        };
+      } catch {
+        return defaultRange();
+      }
+    }
+
+    function clampRange(value) {
+      return Math.min(420, Math.max(0, Number(value) || 0));
+    }
+
+    function saveRange() {
+      localStorage.setItem(RANGE_KEY, JSON.stringify(rangeState));
+      applyRange();
+    }
+
+    function applyRange() {
+      const root = document.documentElement;
+      Object.entries(rangeState).forEach(([side, value]) => {
+        root.style.setProperty(`--safe-${side}`, `${clampRange(value)}px`);
+      });
     }
 
     function openDb() {
@@ -1308,6 +1483,83 @@
         button.addEventListener('click', () => awardPoint(index));
         list.appendChild(button);
       });
+    }
+
+    function renderRangeSettings() {
+      const box = $('rangeBox');
+      box.style.left = `${rangeState.left}px`;
+      box.style.top = `${rangeState.top}px`;
+      box.style.right = `${rangeState.right}px`;
+      box.style.bottom = `${rangeState.bottom}px`;
+      $('rangeReadout').innerHTML = `
+        <span>위 ${rangeState.top}px</span>
+        <span>오른쪽 ${rangeState.right}px</span>
+        <span>아래 ${rangeState.bottom}px</span>
+        <span>왼쪽 ${rangeState.left}px</span>
+      `;
+    }
+
+    function startRangeDrag(event, mode) {
+      event.preventDefault();
+      const stageRect = $('rangeStage').getBoundingClientRect();
+      const start = {
+        x: event.clientX,
+        y: event.clientY,
+        range: { ...rangeState },
+        stageWidth: stageRect.width,
+        stageHeight: stageRect.height
+      };
+
+      const onMove = (moveEvent) => updateRangeDrag(moveEvent, mode, start);
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      };
+
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp, { once: true });
+    }
+
+    function updateRangeDrag(event, mode, start) {
+      const dx = event.clientX - start.x;
+      const dy = event.clientY - start.y;
+      const minSize = 260;
+      const maxLeft = Math.max(0, start.stageWidth - start.range.right - minSize);
+      const maxRight = Math.max(0, start.stageWidth - start.range.left - minSize);
+      const maxTop = Math.max(0, start.stageHeight - start.range.bottom - minSize);
+      const maxBottom = Math.max(0, start.stageHeight - start.range.top - minSize);
+      const next = { ...start.range };
+
+      if (mode === 'move') {
+        const width = start.stageWidth - start.range.left - start.range.right;
+        const height = start.stageHeight - start.range.top - start.range.bottom;
+        const maxMoveLeft = start.stageWidth - width;
+        const maxMoveTop = start.stageHeight - height;
+        const left = clampTo(start.range.left + dx, 0, maxMoveLeft);
+        const top = clampTo(start.range.top + dy, 0, maxMoveTop);
+        next.left = Math.round(left);
+        next.top = Math.round(top);
+        next.right = Math.round(start.stageWidth - width - left);
+        next.bottom = Math.round(start.stageHeight - height - top);
+      } else {
+        if (mode.includes('w')) next.left = Math.round(clampTo(start.range.left + dx, 0, maxLeft));
+        if (mode.includes('e')) next.right = Math.round(clampTo(start.range.right - dx, 0, maxRight));
+        if (mode.includes('n')) next.top = Math.round(clampTo(start.range.top + dy, 0, maxTop));
+        if (mode.includes('s')) next.bottom = Math.round(clampTo(start.range.bottom - dy, 0, maxBottom));
+      }
+
+      rangeState = {
+        top: clampRange(next.top),
+        right: clampRange(next.right),
+        bottom: clampRange(next.bottom),
+        left: clampRange(next.left)
+      };
+      saveRange();
+      renderRangeSettings();
+    }
+
+    function clampTo(value, min, max) {
+      return Math.min(max, Math.max(min, value));
     }
 
     function renderBoard() {
@@ -1717,6 +1969,11 @@
       showScreen('menu');
     });
 
+    $('openRangeBtn').addEventListener('click', () => {
+      renderRangeSettings();
+      showScreen('range');
+    });
+
     $('openTeamBtn').addEventListener('click', () => {
       renderTeamSettings();
       showScreen('team');
@@ -1724,6 +1981,10 @@
 
     $('backToGameBtn').addEventListener('click', () => {
       showScreen('game');
+    });
+
+    $('backFromRangeBtn').addEventListener('click', () => {
+      showScreen('menu');
     });
 
     $('backFromTeamBtn').addEventListener('click', () => {
@@ -1742,6 +2003,16 @@
     $('resetTeamsBtn').addEventListener('click', () => {
       if (!confirm('팀명, 팀원 이름, 점수를 모두 초기화할까요?')) return;
       resetTeams();
+    });
+    $('resetRangeBtn').addEventListener('click', () => {
+      rangeState = defaultRange();
+      saveRange();
+      renderRangeSettings();
+      showToast('게임범위를 초기화했습니다.');
+    });
+    $('rangeMove').addEventListener('pointerdown', (event) => startRangeDrag(event, 'move'));
+    document.querySelectorAll('.range-handle').forEach((handle) => {
+      handle.addEventListener('pointerdown', (event) => startRangeDrag(event, handle.dataset.handle));
     });
     $('finishGameBtn').addEventListener('click', finishGame);
     $('closeAwardBtn').addEventListener('click', () => {
@@ -1797,6 +2068,7 @@
     renderTeamSettings();
     renderScoreboard();
     renderPointTeams();
+    applyRange();
     renderBoard();
   </script>
 </body>
