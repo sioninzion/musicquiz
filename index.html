@@ -1,2075 +1,2077 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>신나는 음악 맞추기 레크레이션</title>
-  <style>
-    :root {
-      --ink: #27211a;
-      --paper: #fffaf0;
-      --paper-dark: #eadfc9;
-      --green: #4f8f4f;
-      --green-dark: #2f6737;
-      --orange: #f3a23b;
-      --red: #e75d4f;
-      --blue: #4e89c7;
-      --shadow: 0 18px 45px rgba(53, 37, 20, .18);
-      --safe-top: 0px;
-      --safe-right: 0px;
-      --safe-bottom: 0px;
-      --safe-left: 0px;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      color: var(--ink);
-      font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
-      background:
-        linear-gradient(rgba(255, 251, 240, .88), rgba(255, 251, 240, .9)),
-        radial-gradient(circle at 15% 15%, rgba(255, 214, 112, .6), transparent 24rem),
-        radial-gradient(circle at 85% 25%, rgba(134, 204, 130, .45), transparent 22rem),
-        #fff8e8;
-      overflow: hidden;
-    }
-
-    button,
-    input {
-      font: inherit;
-    }
-
-    button {
-      cursor: pointer;
-      border: 0;
-      color: var(--ink);
-    }
-
-    .app {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    .screen {
-      position: absolute;
-      inset: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
-      display: none;
-      padding: clamp(14px, 2.2vw, 30px);
-    }
-
-    .screen.active {
-      display: block;
-    }
-
-    .topbar {
-      position: relative;
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      height: 60px;
-    }
-
-    .title {
-      margin: 0;
-      font-size: clamp(24px, 3vw, 42px);
-      letter-spacing: 0;
-      line-height: 1.1;
-    }
-
-    .menu-btn,
-    .corner-btn,
-    .small-btn {
-      border: 3px solid var(--ink);
-      background: #fffdf6;
-      border-radius: 8px;
-      box-shadow: 4px 5px 0 rgba(39, 33, 26, .18);
-      font-weight: 900;
-      transition: transform .12s ease, box-shadow .12s ease;
-    }
-
-    .menu-btn {
-      padding: 10px 20px;
-      min-width: 94px;
-      font-size: 20px;
-    }
-
-    .corner-btn {
-      position: absolute;
-      right: clamp(16px, 2.4vw, 34px);
-      bottom: clamp(16px, 2.4vw, 34px);
-      z-index: 5;
-      padding: 13px 24px;
-      font-size: 22px;
-    }
-
-    .small-btn {
-      padding: 8px 12px;
-      font-size: 15px;
-    }
-
-    .menu-btn:hover,
-    .corner-btn:hover,
-    .small-btn:hover,
-    .play-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 5px 7px 0 rgba(39, 33, 26, .16);
-    }
-
-    .board-wrap {
-      height: calc(100vh - 90px);
-      display: grid;
-      place-items: center;
-      padding: 0 16px 150px;
-    }
-
-    .team-settings {
-      width: min(980px, 94vw);
-      height: calc(100vh - 118px);
-      margin: 10px auto 0;
-      padding: 12px;
-      border: 3px solid var(--ink);
-      border-radius: 8px;
-      background: rgba(255, 253, 246, .96);
-      box-shadow: var(--shadow);
-    }
-
-    .team-settings-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 10px;
-      font-size: clamp(18px, 2vw, 28px);
-      font-weight: 1000;
-    }
-
-    .team-counts {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-
-    .team-count-btn {
-      min-height: 34px;
-      border: 2px solid var(--ink);
-      border-radius: 8px;
-      background: #fff6d9;
-      font-weight: 1000;
-    }
-
-    .team-count-btn.active {
-      background: #9ed48e;
-    }
-
-    .team-editor-list {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      max-height: calc(100% - 86px);
-      overflow: auto;
-      padding-right: 3px;
-    }
-
-    .team-editor {
-      display: grid;
-      gap: 6px;
-      padding: 8px;
-      border: 2px solid rgba(39, 33, 26, .28);
-      border-radius: 8px;
-      background: rgba(255, 250, 232, .8);
-    }
-
-    .top-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      min-width: 190px;
-    }
-
-    .team-name-row {
-      display: grid;
-      grid-template-columns: 52px 1fr;
-      gap: 7px;
-      align-items: center;
-      font-size: 13px;
-      font-weight: 900;
-    }
-
-    .team-name-input,
-    .member-input {
-      width: 100%;
-      min-width: 0;
-      height: 30px;
-      border: 1px solid #9c8669;
-      border-radius: 6px;
-      padding: 0 8px;
-      background: white;
-      font-size: 13px;
-      font-weight: 800;
-    }
-
-    .member-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      grid-template-rows: repeat(2, 30px);
-      gap: 5px;
-    }
-
-    .scorebar {
-      position: absolute;
-      left: clamp(14px, 2.2vw, 30px);
-      right: clamp(14px, 2.2vw, 30px);
-      bottom: clamp(14px, 2.2vw, 30px);
-      z-index: 3;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 12px;
-      align-items: stretch;
-    }
-
-    .score-list {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .score-card {
-      min-height: 62px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-      align-items: center;
-      padding: 10px 14px;
-      border: 3px solid var(--ink);
-      border-radius: 8px;
-      background: #fffdf6;
-      box-shadow: 4px 5px 0 rgba(39, 33, 26, .14);
-    }
-
-    .score-name {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: clamp(15px, 1.5vw, 22px);
-      font-weight: 1000;
-    }
-
-    .score-value {
-      font-size: clamp(20px, 2vw, 32px);
-      font-weight: 1000;
-      color: var(--green-dark);
-    }
-
-    .scorebar .corner-btn {
-      position: static;
-      white-space: nowrap;
-    }
-
-    .fruit-grid {
-      width: min(78vw, 1240px);
-      height: min(calc(100vh - 230px), 560px);
-      display: grid;
-      grid-template-columns: repeat(8, minmax(66px, 1fr));
-      grid-template-rows: repeat(4, minmax(74px, 1fr));
-      align-items: center;
-      justify-items: center;
-      gap: clamp(8px, 1.25vw, 22px);
-    }
-
-    .fruit-card {
-      position: relative;
-      width: min(8.2vw, 96px);
-      min-width: 58px;
-      aspect-ratio: 1 / 1;
-      display: grid;
-      place-items: center;
-      background: transparent;
-      border-radius: 50%;
-      transform-origin: center;
-      animation: fruitIn .45s ease both;
-    }
-
-    .fruit-card.zooming {
-      z-index: 10;
-      animation: zoomFruit .48s cubic-bezier(.18, .8, .2, 1) forwards;
-    }
-
-    .fruit-emoji {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      font-size: clamp(46px, 6vw, 88px);
-      line-height: 1;
-      filter: saturate(1.08) drop-shadow(0 10px 10px rgba(75, 49, 18, .16));
-      transition: filter .18s ease, transform .18s ease;
-    }
-
-    .fruit-card.unset .fruit-emoji {
-      filter: grayscale(1) saturate(0) contrast(.9) opacity(.52) drop-shadow(0 8px 8px rgba(0, 0, 0, .1));
-    }
-
-    .fruit-card:hover .fruit-emoji {
-      transform: scale(1.08) rotate(-2deg);
-    }
-
-    .fruit-number {
-      position: relative;
-      z-index: 1;
-      width: clamp(28px, 3.3vw, 44px);
-      height: clamp(28px, 3.3vw, 44px);
-      display: grid;
-      place-items: center;
-      border: 3px solid rgba(39, 33, 26, .9);
-      border-radius: 50%;
-      background: rgba(255, 255, 255, .84);
-      box-shadow: 0 4px 0 rgba(39, 33, 26, .14);
-      font-size: clamp(15px, 1.9vw, 24px);
-      font-weight: 1000;
-    }
-
-    .menu-actions {
-      display: grid;
-      gap: 8px;
-      justify-items: end;
-      transform: translateY(58px);
-    }
-
-    .range-screen {
-      inset: 0;
-    }
-
-    .range-panel {
-      width: min(1180px, 94vw);
-      height: calc(100vh - 134px);
-      margin: 16px auto 0;
-      padding: clamp(14px, 2vw, 22px);
-      border: 4px solid var(--ink);
-      border-radius: 8px;
-      background: rgba(255, 253, 246, .96);
-      box-shadow: var(--shadow);
-    }
-
-    .range-stage {
-      position: relative;
-      height: calc(100% - 58px);
-      min-height: 420px;
-      border: 4px solid rgba(39, 33, 26, .72);
-      border-radius: 8px;
-      background:
-        repeating-linear-gradient(45deg, rgba(39, 33, 26, .07) 0 12px, rgba(255, 255, 255, .35) 12px 24px),
-        #eee2cd;
-      overflow: hidden;
-      touch-action: none;
-    }
-
-    .range-box {
-      position: absolute;
-      left: 0;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      display: grid;
-      place-items: center;
-      border: 5px solid var(--green-dark);
-      border-radius: 8px;
-      background: rgba(158, 212, 142, .45);
-      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .76), 0 12px 28px rgba(39, 33, 26, .18);
-    }
-
-    .range-box-label {
-      padding: 10px 18px;
-      border: 3px solid var(--ink);
-      border-radius: 8px;
-      background: #fffdf6;
-      font-size: clamp(20px, 2.4vw, 36px);
-      font-weight: 1000;
-    }
-
-    .range-move {
-      width: 94px;
-      height: 94px;
-      display: grid;
-      place-items: center;
-      border: 4px solid var(--ink);
-      border-radius: 50%;
-      background: #f8df8a;
-      box-shadow: 4px 5px 0 rgba(39, 33, 26, .16);
-      font-size: 34px;
-      font-weight: 1000;
-      cursor: move;
-    }
-
-    .range-handle {
-      position: absolute;
-      width: 34px;
-      height: 34px;
-      border: 4px solid var(--ink);
-      border-radius: 8px;
-      background: #fffdf6;
-      box-shadow: 3px 4px 0 rgba(39, 33, 26, .18);
-    }
-
-    .range-handle.nw { left: -18px; top: -18px; cursor: nwse-resize; }
-    .range-handle.ne { right: -18px; top: -18px; cursor: nesw-resize; }
-    .range-handle.sw { left: -18px; bottom: -18px; cursor: nesw-resize; }
-    .range-handle.se { right: -18px; bottom: -18px; cursor: nwse-resize; }
-
-    .range-readout {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 8px 16px;
-      min-height: 38px;
-      margin-bottom: 12px;
-      font-size: 15px;
-      font-weight: 900;
-      color: #5c4b36;
-    }
-
-    .range-actions {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 18px;
-    }
-
-    .menu-panel {
-      height: calc(100vh - 98px);
-      width: min(1180px, 94vw);
-      margin: 8px auto 0;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding: clamp(14px, 2vw, 22px);
-      border: 4px solid var(--ink);
-      border-radius: 8px;
-      background: rgba(255, 253, 246, .94);
-      box-shadow: var(--shadow);
-    }
-
-    .menu-head {
-      display: grid;
-      grid-template-columns: 64px minmax(150px, 1fr) minmax(170px, 1fr) 82px 116px;
-      gap: 10px;
-      padding: 0 6px 4px;
-      font-weight: 900;
-      color: #6a5a45;
-    }
-
-    .song-list {
-      overflow: auto;
-      padding-right: 5px;
-    }
-
-    .song-row {
-      display: grid;
-      grid-template-columns: 64px minmax(150px, 1fr) minmax(170px, 1fr) 82px 116px;
-      gap: 10px;
-      align-items: center;
-      min-height: 54px;
-      padding: 7px 6px;
-      border-bottom: 1px dashed rgba(39, 33, 26, .22);
-    }
-
-    .song-no {
-      width: 40px;
-      height: 40px;
-      display: grid;
-      place-items: center;
-      border: 3px solid var(--ink);
-      border-radius: 50%;
-      background: var(--paper);
-      font-weight: 1000;
-    }
-
-    .answer-input {
-      width: 100%;
-      min-width: 0;
-      height: 40px;
-      border: 2px solid #9c8669;
-      border-radius: 8px;
-      padding: 0 12px;
-      background: white;
-      font-weight: 800;
-    }
-
-    .file-cell {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 8px;
-      align-items: center;
-      min-width: 0;
-    }
-
-    .file-label {
-      display: inline-grid;
-      place-items: center;
-      height: 38px;
-      padding: 0 12px;
-      border: 2px solid var(--ink);
-      border-radius: 8px;
-      background: #f8df8a;
-      font-weight: 900;
-      white-space: nowrap;
-      cursor: pointer;
-    }
-
-    .file-label input {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .file-name {
-      min-width: 0;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      color: #695943;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .status-pill {
-      justify-self: start;
-      min-width: 86px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      text-align: center;
-      font-size: 14px;
-      font-weight: 900;
-      color: white;
-      background: #8c8c8c;
-    }
-
-    .status-pill.ready {
-      background: var(--green);
-    }
-
-    .detail-layout {
-      height: calc(100vh - 40px);
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(270px, .72fr);
-      gap: clamp(20px, 5vw, 76px);
-      align-items: center;
-      padding: 0 min(6vw, 80px) 26px;
-    }
-
-    .answer-zone {
-      display: grid;
-      gap: 18px;
-      justify-items: center;
-    }
-
-    .big-fruit {
-      position: relative;
-      width: min(24vw, 230px);
-      min-width: 150px;
-      aspect-ratio: 1 / 1;
-      display: grid;
-      place-items: center;
-      animation: popIn .42s ease both;
-    }
-
-    .big-fruit .fruit-emoji {
-      font-size: clamp(130px, 16vw, 220px);
-    }
-
-    .paper-board {
-      position: relative;
-      width: min(620px, 82vw);
-      min-height: 300px;
-      display: grid;
-      place-items: center;
-      padding: 34px;
-      border: 4px solid var(--ink);
-      border-radius: 8px;
-      background: #fffdf5;
-      box-shadow: var(--shadow);
-      transform: rotate(-.6deg);
-      overflow: hidden;
-    }
-
-    .tape {
-      position: absolute;
-      width: 94px;
-      height: 28px;
-      background: rgba(246, 231, 172, .8);
-      border: 2px solid rgba(39, 33, 26, .42);
-      transform: rotate(-32deg);
-      opacity: .9;
-    }
-
-    .tape.one {
-      left: -18px;
-      top: 26px;
-    }
-
-    .tape.two {
-      right: -14px;
-      bottom: 30px;
-      transform: rotate(25deg);
-    }
-
-    .answer-text {
-      width: 100%;
-      max-width: 520px;
-      text-align: center;
-      font-size: clamp(34px, 5vw, 78px);
-      line-height: 1.15;
-      font-weight: 1000;
-      word-break: keep-all;
-      overflow-wrap: anywhere;
-    }
-
-    .cover-paper {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      border: 0;
-      background:
-        linear-gradient(120deg, rgba(255,255,255,.36), transparent 35%),
-        #f6ecd5;
-      font-size: clamp(34px, 4.6vw, 68px);
-      font-weight: 1000;
-      transform-origin: 18% 0;
-      transition: transform .75s cubic-bezier(.28, .86, .28, 1), opacity .55s ease;
-    }
-
-    .paper-board.revealed .cover-paper {
-      transform: translateY(126%) rotate(16deg);
-      opacity: .35;
-      pointer-events: none;
-    }
-
-    .award-point-btn {
-      min-width: min(360px, 70vw);
-      padding: 15px 24px;
-      border: 4px solid var(--ink);
-      border-radius: 8px;
-      background: #9ed48e;
-      box-shadow: 5px 6px 0 rgba(39, 33, 26, .16);
-      font-size: clamp(20px, 2.6vw, 34px);
-      font-weight: 1000;
-      opacity: 0;
-      transform: translateY(42px);
-      pointer-events: none;
-      transition: opacity .28s ease, transform .28s ease;
-    }
-
-    .award-point-btn.show {
-      opacity: 1;
-      transform: translateY(0);
-      pointer-events: auto;
-    }
-
-    .play-panel {
-      display: grid;
-      gap: 30px;
-      align-content: center;
-    }
-
-    .play-btn {
-      display: grid;
-      grid-template-columns: 76px 1fr;
-      align-items: center;
-      gap: 16px;
-      min-height: 86px;
-      padding: 12px 22px 12px 14px;
-      border: 4px solid var(--ink);
-      border-radius: 8px;
-      background: #fffdf6;
-      box-shadow: 5px 6px 0 rgba(39, 33, 26, .16);
-      text-align: left;
-      font-size: clamp(18px, 2.2vw, 30px);
-      font-weight: 1000;
-    }
-
-    .play-icon {
-      width: 58px;
-      height: 58px;
-      display: grid;
-      place-items: center;
-      border: 4px solid var(--ink);
-      border-radius: 50%;
-      background: #f8df8a;
-      font-size: 28px;
-    }
-
-    .play-btn:disabled {
-      cursor: not-allowed;
-      opacity: .43;
-      filter: grayscale(1);
-      transform: none;
-    }
-
-    .point-overlay {
-      position: absolute;
-      inset: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
-      z-index: 12;
-      display: grid;
-      align-content: center;
-      gap: 28px;
-      padding: 34px;
-      background: rgba(255, 248, 232, .92);
-      transform: translateY(105%);
-      transition: transform .38s cubic-bezier(.22, .8, .26, 1);
-    }
-
-    .point-overlay.show {
-      transform: translateY(0);
-    }
-
-    .point-overlay.awarded {
-      background: rgba(255, 241, 168, .95);
-    }
-
-    .point-title {
-      margin: 0;
-      text-align: center;
-      font-size: clamp(28px, 4.2vw, 66px);
-      font-weight: 1000;
-    }
-
-    .point-feedback {
-      min-height: 72px;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      color: var(--green-dark);
-      font-size: clamp(26px, 4vw, 64px);
-      font-weight: 1000;
-      opacity: 0;
-      transform: scale(.86);
-      transition: opacity .18s ease, transform .18s ease;
-    }
-
-    .point-feedback.show {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    .point-team-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 16px;
-      width: min(1120px, 94vw);
-      margin: 0 auto;
-    }
-
-    .point-team-btn {
-      min-height: 112px;
-      padding: 18px;
-      border: 4px solid var(--ink);
-      border-radius: 8px;
-      background: #fffdf6;
-      box-shadow: 6px 7px 0 rgba(39, 33, 26, .16);
-      font-size: clamp(22px, 2.8vw, 42px);
-      font-weight: 1000;
-      overflow-wrap: anywhere;
-    }
-
-    .point-team-btn.selected {
-      background: #9ed48e;
-      transform: scale(1.04);
-    }
-
-    .point-team-btn:disabled {
-      cursor: default;
-    }
-
-    .award-screen {
-      position: absolute;
-      inset: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
-      z-index: 14;
-      display: none;
-      align-content: center;
-      justify-items: center;
-      gap: 22px;
-      padding: 36px;
-      background:
-        linear-gradient(rgba(255, 250, 236, .96), rgba(255, 250, 236, .96)),
-        radial-gradient(circle at 50% 25%, rgba(243, 162, 59, .38), transparent 26rem);
-    }
-
-    .award-screen.show {
-      display: grid;
-    }
-
-    .award-title {
-      margin: 0;
-      text-align: center;
-      font-size: clamp(32px, 5vw, 82px);
-      font-weight: 1000;
-    }
-
-    .podium {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(170px, 1fr));
-      align-items: end;
-      gap: clamp(12px, 2vw, 26px);
-      width: min(980px, 94vw);
-    }
-
-    .podium-card {
-      display: none;
-      min-height: 210px;
-      padding: 22px;
-      border: 4px solid var(--ink);
-      border-radius: 8px;
-      background: #fffdf6;
-      box-shadow: var(--shadow);
-      text-align: center;
-      animation: popIn .32s ease both;
-    }
-
-    .podium-card.show {
-      display: grid;
-      align-content: center;
-      gap: 8px;
-    }
-
-    .podium-card.rank-1 {
-      min-height: 300px;
-      background: #fff1a8;
-      order: 2;
-    }
-
-    .podium-card.rank-2 {
-      min-height: 255px;
-      background: #e7edf3;
-      order: 1;
-    }
-
-    .podium-card.rank-3 {
-      min-height: 225px;
-      background: #f6c99c;
-      order: 3;
-    }
-
-    .rank-label {
-      font-size: clamp(26px, 3.6vw, 56px);
-      font-weight: 1000;
-    }
-
-    .rank-team {
-      font-size: clamp(20px, 2.7vw, 42px);
-      font-weight: 1000;
-      overflow-wrap: anywhere;
-    }
-
-    .rank-score {
-      color: var(--green-dark);
-      font-size: clamp(18px, 2vw, 30px);
-      font-weight: 1000;
-    }
-
-    .toast {
-      position: absolute;
-      left: 50%;
-      bottom: 24px;
-      z-index: 8;
-      max-width: min(680px, 88vw);
-      padding: 12px 18px;
-      border: 3px solid var(--ink);
-      border-radius: 8px;
-      background: #fffdf6;
-      box-shadow: var(--shadow);
-      font-weight: 900;
-      text-align: center;
-      transform: translate(-50%, 120%);
-      opacity: 0;
-      transition: transform .22s ease, opacity .22s ease;
-      pointer-events: none;
-    }
-
-    .toast.show {
-      transform: translate(-50%, 0);
-      opacity: 1;
-    }
-
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    @keyframes fruitIn {
-      from { opacity: 0; transform: translateY(14px) scale(.94); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    @keyframes zoomFruit {
-      to { transform: scale(2.9); opacity: 0; }
-    }
-
-    @keyframes popIn {
-      from { opacity: 0; transform: scale(.85) rotate(-5deg); }
-      to { opacity: 1; transform: scale(1) rotate(0); }
-    }
-
-    @media (max-width: 900px) {
-      body {
-        overflow: auto;
-      }
-
-      .app {
-        min-height: 100vh;
-        height: auto;
-        overflow: visible;
-      }
-
-      .screen {
-        position: relative;
-        min-height: 100vh;
-      }
-
-      .fruit-grid {
-        height: auto;
-        width: min(92vw, 520px);
-        grid-template-columns: repeat(4, minmax(64px, 1fr));
-        grid-template-rows: none;
-      }
-
-      .fruit-card {
-        width: min(17vw, 86px);
-      }
-
-      .detail-layout {
-        height: auto;
-        min-height: 100vh;
-        grid-template-columns: 1fr;
-        padding: 12px 16px 94px;
-      }
-
-      .play-panel {
-        gap: 14px;
-      }
-
-      .team-settings {
-        width: 100%;
-        height: auto;
-        margin-top: 12px;
-      }
-
-      .team-editor-list {
-        grid-template-columns: 1fr;
-        max-height: none;
-      }
-
-      .member-grid {
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: none;
-      }
-
-      .scorebar {
-        position: static;
-        grid-template-columns: 1fr;
-        margin-top: 12px;
-      }
-
-      .score-list {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .range-row {
-        grid-template-columns: 1fr;
-        gap: 6px;
-      }
-
-      .range-value {
-        text-align: left;
-      }
-
-      .menu-panel {
-        height: auto;
-        min-height: calc(100vh - 110px);
-      }
-
-      .menu-head {
-        display: none;
-      }
-
-      .song-row {
-        grid-template-columns: 46px 1fr;
-      }
-
-      .file-cell,
-      .status-pill,
-      .small-btn {
-        grid-column: 2;
-      }
-    }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Gospel Bracelet Cinema v6.10 · 9 Chapter Build</title>
+<style>
+:root{color-scheme:dark;font-family:ui-sans-serif,system-ui,-apple-system,"Noto Sans KR",sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;background:#030407;color:#f8fafc;overflow:hidden}
+button,input{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.screen{display:none;min-height:100dvh}
+.screen.active{display:grid}
+
+/* HOME */
+.home{place-items:center;text-align:center;padding:28px;
+  background:radial-gradient(circle at 50% 22%,rgba(255,255,255,.09),transparent 34rem),#030407}
+.homebox{width:min(820px,100%);display:grid;gap:28px}
+.logo{width:82px;height:82px;margin:0 auto;border-radius:50%;
+  border:1px solid rgba(255,255,255,.16);
+  background:radial-gradient(circle,#fff 0 18%,rgba(255,255,255,.2) 19% 42%,transparent 43%);
+  box-shadow:0 0 70px rgba(255,255,255,.18)}
+.eyebrow{color:rgba(248,250,252,.6);letter-spacing:.12em;text-transform:uppercase;font-size:13px;margin-bottom:12px}
+h1{font-size:clamp(40px,9vw,88px);line-height:.92}
+.copy{width:min(620px,100%);margin:18px auto 0;color:rgba(248,250,252,.6);font-size:clamp(16px,2vw,21px);line-height:1.6}
+.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.big{min-height:92px;border:1px solid rgba(255,255,255,.16);border-radius:24px;
+  background:rgba(255,255,255,.08);font-size:22px;font-weight:850}
+.big.primary{background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(247,200,95,.16))}
+
+/* PRESENTATION */
+.presentation{position:relative;background:#030407;overflow:hidden}
+.presentation canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ui{position:fixed;z-index:5;inset:0;pointer-events:none;transition:opacity .35s ease}
+.immersive .ui{opacity:0;pointer-events:none}
+.top{position:absolute;top:max(16px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));display:flex;gap:10px;pointer-events:auto}
+.icon{width:46px;height:46px;border:1px solid rgba(255,255,255,.16);border-radius:999px;
+  background:rgba(0,0,0,.35);backdrop-filter:blur(18px);display:grid;place-items:center;border:none}
+.label{position:absolute;left:20px;bottom:20px;width:min(520px,calc(100vw - 40px));
+  padding:14px 16px;border:1px solid rgba(255,255,255,.12);border-radius:16px;
+  background:rgba(0,0,0,.26);backdrop-filter:blur(18px)}
+.label small,.meta{display:block;color:rgba(255,255,255,.5);font-size:11px;text-transform:uppercase;letter-spacing:.1em}
+.label strong{display:block;margin-top:4px;font-size:18px}
+.label span{display:block;margin-top:5px;color:rgba(255,255,255,.64);font-size:14px;line-height:1.45}
+.hud{position:absolute;right:18px;bottom:18px;display:grid;grid-template-columns:auto auto;gap:12px;align-items:end;pointer-events:auto}
+.panel{border:1px solid rgba(255,255,255,.16);border-radius:16px;background:rgba(0,0,0,.36);backdrop-filter:blur(18px)}
+.roompanel{display:grid;grid-template-columns:112px minmax(190px,260px);gap:12px;padding:12px;align-items:center}
+.qr{width:112px;height:112px;background:#fff;border-radius:10px;padding:8px}
+.room{font-size:27px;font-weight:900;margin-top:3px}
+.link{margin-top:8px;color:rgba(255,255,255,.55);font-size:12px;overflow-wrap:anywhere}
+.counter{padding:16px;min-width:126px}
+.count{font-size:24px;font-weight:900;margin-top:3px}
+.blackout{position:fixed;z-index:20;inset:0;background:#000;display:none;place-items:center;
+  color:rgba(255,255,255,.16);font-size:12px;text-transform:uppercase}
+.blackout.active{display:grid}
+
+/* REMOTE */
+.remote{place-items:center;padding:max(18px,env(safe-area-inset-top)) 18px max(18px,env(safe-area-inset-bottom));
+  background:radial-gradient(circle at 50% 18%,rgba(255,255,255,.11),transparent 24rem),#030407}
+.rshell{width:min(480px,100%);display:grid;gap:14px}
+.card{border:1px solid rgba(255,255,255,.16);border-radius:22px;background:rgba(255,255,255,.08);
+  backdrop-filter:blur(24px);padding:18px}
+.rtop{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.rtop strong{display:block;font-size:24px;margin-top:3px}
+.conn{display:flex;align-items:center;gap:7px;color:rgba(248,250,252,.6);font-size:13px}
+.dot{width:9px;height:9px;border-radius:50%;background:#fb7185;box-shadow:0 0 16px #fb7185}
+.dot.on{background:#86efac;box-shadow:0 0 16px #86efac}
+.orbwrap{display:grid;place-items:center;padding:28px 16px 24px}
+.rorb{width:min(64vw,260px);aspect-ratio:1;border-radius:50%;position:relative;display:grid;place-items:center;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.88),var(--orb,#ffd166) 24%,rgba(255,255,255,.06) 60%,rgba(0,0,0,.18) 73%);
+  box-shadow:0 0 80px color-mix(in srgb,var(--orb,#ffd166),transparent 45%);animation:spin 8s linear infinite}
+.rorb:before{content:"";position:absolute;inset:12%;border-radius:50%;
+  border:1px solid rgba(255,255,255,.25);border-top-color:rgba(255,255,255,.85);
+  animation:spin 3s linear infinite reverse}
+.go{width:50%;aspect-ratio:1;border-radius:50%;border:1px solid rgba(255,255,255,.45);
+  background:rgba(0,0,0,.38);font-size:clamp(26px,8vw,42px);font-weight:1000}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.rbtn{min-height:78px;border:1px solid rgba(255,255,255,.16);border-radius:18px;
+  background:rgba(255,255,255,.08);font-weight:850;font-size:18px}
+.rbtn.active{border-color:rgba(247,200,95,.68);background:rgba(247,200,95,.15)}
+.manual{display:grid;grid-template-columns:1fr auto;gap:10px}
+.manual input{min-height:48px;border:1px solid rgba(255,255,255,.16);border-radius:14px;
+  background:rgba(0,0,0,.25);padding:0 14px;text-transform:uppercase}
+.notice{position:fixed;z-index:50;left:50%;bottom:18px;transform:translateX(-50%);
+  width:min(680px,calc(100% - 28px));padding:13px 15px;border:1px solid rgba(251,113,133,.35);
+  border-radius:14px;background:rgba(60,12,22,.86);color:#ffe4e6;font-size:14px}
+.notice:empty{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:820px){
+  .actions,.hud{grid-template-columns:1fr}
+  .roompanel{grid-template-columns:92px 1fr}.qr{width:92px;height:92px}
+  .counter{display:none}.manual{grid-template-columns:1fr}.big{min-height:78px}
+}
+</style>
 </head>
 <body>
-  <div class="app">
-    <section id="gameScreen" class="screen active" aria-label="게임 화면">
-      <div class="topbar">
-        <button id="openMenuBtn" class="menu-btn" type="button">메뉴</button>
-        <h1 class="title">신나는 음악 맞추기 레크레이션</h1>
-        <div class="top-actions">
-          <button id="openTeamBtn" class="menu-btn" type="button">팀 설정</button>
-        </div>
-      </div>
-      <div class="board-wrap">
-        <div id="fruitGrid" class="fruit-grid" aria-label="과일 선택판"></div>
-      </div>
-      <div class="scorebar" aria-label="팀 점수판">
-        <div id="scoreList" class="score-list"></div>
-        <button id="finishGameBtn" class="corner-btn" type="button">게임 끝내기</button>
-      </div>
-    </section>
-
-    <section id="menuScreen" class="screen" aria-label="메뉴 화면">
-      <div class="topbar">
-        <button id="openRangeBtn" class="menu-btn" type="button">게임범위 조정</button>
-        <h1 class="title">메뉴</h1>
-        <div class="menu-actions">
-          <button id="resetBtn" class="small-btn" type="button">전체 초기화</button>
-          <button id="shuffleSongsBtn" class="small-btn" type="button">셔플</button>
-          <button id="exportSongsBtn" class="small-btn" type="button">저장값 내보내기</button>
-          <button id="importSongsBtn" class="small-btn" type="button">저장값 불러오기</button>
-          <input id="importSongsInput" class="sr-only" type="file" accept="application/json,.json">
-        </div>
-      </div>
-      <div class="menu-panel">
-        <div class="menu-head" aria-hidden="true">
-          <span>번호</span>
-          <span>정답</span>
-          <span>음원 파일</span>
-          <span>지우기</span>
-          <span>상태</span>
-        </div>
-        <div id="songList" class="song-list"></div>
-      </div>
-      <button id="backToGameBtn" class="corner-btn" type="button">뒤로</button>
-    </section>
-
-    <section id="rangeScreen" class="screen range-screen" aria-label="게임범위 조정 화면">
-      <div class="topbar">
-        <span aria-hidden="true"></span>
-        <h1 class="title">게임범위 조정</h1>
-        <span aria-hidden="true"></span>
-      </div>
-      <div class="range-panel">
-        <div id="rangeReadout" class="range-readout"></div>
-        <div id="rangeStage" class="range-stage">
-          <div id="rangeBox" class="range-box">
-            <div class="range-box-label">사용 영역</div>
-            <button id="rangeMove" class="range-move" type="button" aria-label="게임범위 이동">✥</button>
-            <button class="range-handle nw" type="button" data-handle="nw" aria-label="왼쪽 위 모서리"></button>
-            <button class="range-handle ne" type="button" data-handle="ne" aria-label="오른쪽 위 모서리"></button>
-            <button class="range-handle sw" type="button" data-handle="sw" aria-label="왼쪽 아래 모서리"></button>
-            <button class="range-handle se" type="button" data-handle="se" aria-label="오른쪽 아래 모서리"></button>
-          </div>
-        </div>
-        <div class="range-actions">
-          <button id="resetRangeBtn" class="small-btn" type="button">범위 초기화</button>
-        </div>
-      </div>
-      <button id="backFromRangeBtn" class="corner-btn" type="button">뒤로</button>
-    </section>
-
-    <section id="teamScreen" class="screen" aria-label="팀 설정 화면">
-      <div class="topbar">
-        <span aria-hidden="true"></span>
-        <h1 class="title">팀 설정</h1>
-        <button id="resetTeamsBtn" class="small-btn" type="button">전체 초기화</button>
-      </div>
-      <aside class="team-settings" aria-label="팀 설정">
-        <div class="team-settings-head">
-          <span>팀 수와 팀원을 정하세요</span>
-          <span>점수는 게임 화면에 저장됩니다</span>
-        </div>
-        <div id="teamCountButtons" class="team-counts" aria-label="팀 수 선택"></div>
-        <div id="teamEditorList" class="team-editor-list"></div>
-      </aside>
-      <button id="backFromTeamBtn" class="corner-btn" type="button">뒤로</button>
-    </section>
-
-    <section id="detailScreen" class="screen" aria-label="세부 게임 화면">
-      <div class="detail-layout">
-        <div class="answer-zone">
-          <div id="bigFruit" class="big-fruit" aria-hidden="true"></div>
-          <div id="paperBoard" class="paper-board">
-            <span class="tape one" aria-hidden="true"></span>
-            <span class="tape two" aria-hidden="true"></span>
-            <div id="answerText" class="answer-text"></div>
-            <button id="coverPaper" class="cover-paper" type="button">정답 공개</button>
-          </div>
-          <button id="awardPointBtn" class="award-point-btn" type="button">점수 주기</button>
-        </div>
-        <div class="play-panel">
-          <button id="playHighlight1" class="play-btn" type="button">
-            <span class="play-icon">▶</span>
-            <span>하이라이트 1 듣기</span>
-          </button>
-          <button id="playHighlight2" class="play-btn" type="button">
-            <span class="play-icon">▶</span>
-            <span>하이라이트 2 듣기</span>
-          </button>
-          <button id="playFull" class="play-btn" type="button">
-            <span class="play-icon">▶</span>
-            <span>전곡 듣기</span>
-          </button>
-        </div>
-      </div>
-      <button id="exitDetailBtn" class="corner-btn" type="button">나가기</button>
-    </section>
-
-    <div id="pointOverlay" class="point-overlay" aria-label="점수 줄 팀 선택">
-      <h2 id="pointTitle" class="point-title">점수 줄 팀을 고르세요</h2>
-      <div id="pointFeedback" class="point-feedback" aria-live="polite"></div>
-      <div id="pointTeamList" class="point-team-list"></div>
+<main>
+<!-- HOME -->
+<section class="screen home active" id="homeScreen">
+  <div class="homebox">
+    <div class="logo"></div>
+    <div>
+      <p class="eyebrow">Gospel Bracelet · Cinematic v6.10</p>
+      <h1>복음팔찌 시네마</h1>
+      <p class="copy">슬라이드가 아니라 리모컨으로 9개의 시네마틱 챕터를 넘기는 인터랙티브 발표입니다. 중앙 입자 스피어와 세계 상태가 복음의 흐름에 따라 변화합니다.</p>
     </div>
-
-    <section id="awardScreen" class="award-screen" aria-label="시상 화면">
-      <h2 class="award-title">최종 시상</h2>
-      <div id="podium" class="podium"></div>
-      <button id="closeAwardBtn" class="corner-btn" type="button">돌아가기</button>
-    </section>
-
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <audio id="player"></audio>
+    <div class="actions">
+      <button class="big primary" id="startPresentation">발표 화면</button>
+      <button class="big" id="startRemote">리모컨</button>
+    </div>
   </div>
+</section>
 
-  <script>
-    const SONG_COUNT = 32;
-    const HIGHLIGHT_SECONDS = 4;
-    const DB_NAME = 'fruit-music-guess-db';
-    const DB_VERSION = 1;
-    const META_KEY = 'fruitMusicGuessMetaV1';
-    const TEAM_KEY = 'fruitMusicGuessTeamsV1';
-    const RANGE_KEY = 'fruitMusicGuessRangeV1';
-    const POINT_VALUE = 5;
-    const FRUITS = [
-      '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓',
-      '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥝', '🥥'
-    ];
+<!-- PRESENTATION -->
+<section class="screen presentation" id="presentationScreen">
+  <canvas id="cinema"></canvas>
+  <div class="ui" id="cinemaUi">
+    <div class="top">
+      <button class="icon" id="homeFromPresentation">‹</button>
+      <button class="icon" id="fullScreenButton">⛶</button>
+    </div>
+    <div class="label">
+      <small id="chapterSmall">Chapter 01</small>
+      <strong id="chapterTitle"></strong>
+      <span id="chapterDesc"></span>
+    </div>
+    <aside class="hud">
+      <div class="panel roompanel">
+        <div class="qr" id="qrCode"></div>
+        <div>
+          <span class="meta">Room ID</span>
+          <div class="room" id="presentationRoom">------</div>
+          <div class="link" id="remoteLink"></div>
+        </div>
+      </div>
+      <div class="panel counter">
+        <span class="meta">Chapter</span>
+        <div class="count"><span id="presentationChapter">1</span>/<span id="presentationTotal">9</span></div>
+      </div>
+    </aside>
+  </div>
+  <div class="blackout" id="blackout">Black screen</div>
+</section>
 
-    const $ = (id) => document.getElementById(id);
-    const screens = {
-      game: $('gameScreen'),
-      menu: $('menuScreen'),
-      range: $('rangeScreen'),
-      team: $('teamScreen'),
-      detail: $('detailScreen')
-    };
+<!-- REMOTE -->
+<section class="screen remote" id="remoteScreen">
+  <div class="rshell">
+    <button class="icon" id="homeFromRemote">‹</button>
+    <div class="card rtop">
+      <div>
+        <span class="meta">Connected Room</span>
+        <strong id="remoteRoom">------</strong>
+      </div>
+      <div class="conn">
+        <span class="dot" id="connectionDot"></span>
+        <span id="connectionText">대기 중</span>
+      </div>
+    </div>
+    <div style="display:grid;gap:12px">
+      <button class="rbtn" id="previousChapter">◀  이전 슬라이드</button>
+      <button class="rbtn" id="nextChapter">다음 슬라이드  ▶</button>
+      <button class="rbtn" id="toggleFullscreen">전체화면 전환</button>
+      <button class="rbtn" id="sphereGallery">복음 스피어 보기</button>
+      <button class="rbtn" id="calibrateBtn">📍 위치값 설정</button>
+    </div>
+    <div class="card" id="manualRoomCard">
+      <span class="meta">Manual Connect</span>
+      <div class="manual">
+        <input id="manualRoomInput" maxlength="12" placeholder="ROOM ID"/>
+        <button class="rbtn" id="manualRoomConnect">연결</button>
+      </div>
+    </div>
+    <div style="color:rgba(255,255,255,.3);font-size:12px;text-align:center">gospel cinema v6.10 · 9 chapters</div>
+  </div>
+</section>
+</main>
+<div class="notice" id="notice"></div>
 
-    const player = $('player');
-    let dbPromise;
-    let metadata = loadMetadata();
-    let teamState = loadTeamState();
-    let rangeState = loadRangeState();
-    let currentSongNo = null;
-    let currentAudioUrl = null;
-    let clipTimer = null;
-    let pointOverlayTimer = null;
-    let awardTimer = null;
-    let fruitAssignments = makeFruitAssignments();
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+import{getDatabase,ref,set,onValue}from"https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
-    function defaultSong(no) {
-      return {
-        no,
-        answer: '',
-        fileName: '',
-        mimeType: '',
-        duration: 0,
-        highlight1: 0,
-        highlight2: 0,
-        updatedAt: 0
-      };
+const firebaseConfig={apiKey:"AIzaSyChDJWmEsddYz178QLa6VCF5Xq9gS3uRAs",authDomain:"mongpj1.firebaseapp.com",databaseURL:"https://mongpj1-default-rtdb.firebaseio.com",projectId:"mongpj1",storageBucket:"mongpj1.firebasestorage.app",messagingSenderId:"525975516949",appId:"1:525975516949:web:babf2d21760764db219b1c"};
+
+// This build is organized as 8 controllable chapters.
+// Some drawPrototypeNailing+ helpers below are retained as visual modules/prototypes,
+// but the remote, labels, Firebase state, and render timeline all use Chapter 1-8.
+const TOTAL=8;
+const CHAPTER_INFO=[
+  ['순수한 세계','검은 우주 속 흰 입자 스피어가 고요히 회전하며 시작됩니다.'],
+  ['이야기의 시작','스피어 회전이 빨라지고 입자들이 폭발하듯 흩어지며 세계가 살아납니다.'],
+  ['금색 재형성','흩어진 입자들이 다시 모여 금색 스피어가 되고, 흰 무한 공간으로 전환됩니다.'],
+  ['추락','흰 세계가 균열처럼 깨지고 검은 골목과 비 속에서 스피어가 검게 물듭니다.'],
+  ['죄','검은 스피어가 오른쪽 아래부터 붉게 번지고, 흰 입자들이 위로 거슬러 올라갑니다.'],
+  ['새로운 시작','꼬리와 흰 입자가 사라지고 붉은 스피어의 점들이 하나씩 흰색으로 바뀝니다.'],
+  ['씨앗','흰 스피어가 흙과 잔디의 세계에 씨앗처럼 심어집니다.'],
+  ['새 생명','스피어에서 초록 싹이 돋아나며 조용한 성장과 희망으로 마무리됩니다.'],
+];
+
+const $=s=>document.querySelector(s);
+const canvas=$('#cinema'), ctx=canvas.getContext('2d');
+let W=innerWidth, H=innerHeight, DPR=1;
+
+// ─── State ─────────────────────────────────────────────────────────────────
+// Naming rule: UI/docs call the controllable units "chapters".
+// Firebase writes still use the key "scene" for compatibility with older remotes.
+// ─── Timeline engine ──────────────────────────────────────────────────────────
+// T  : current timeline position in seconds (continuously flowing)
+// Tgt: target T we are tweening toward
+// Each chapter N has a "checkpoint" = the T value where that chapter's narrative
+// is fully settled (presenter pauses here to talk).
+// When the chapter advances, Tgt jumps to the next checkpoint and T chases it.
+// When the chapter goes backward, T snaps directly (instant rewind).
+//
+// Chapter durations (seconds between checkpoints):
+const CK_DUR=[
+  0,    // chapter 1  start  T=0
+  9,    // chapter 1  순수한 세계
+  11,   // chapter 2  spin+blast
+  11,   // chapter 3  vortex+gold → 흰 공간
+  13,   // chapter 4  흰 배경 깨짐 → 검은 골목 → 스피어 검게
+  13,   // chapter 5  검은→빨강
+  32,   // chapter 6  new beginning (꼬리 fade out → 입자별 흰색 전환)
+  9,    // chapter 7  seed
+  13,   // chapter 8  sprout
+];
+// Precompute checkpoint T values
+const CK=CK_DUR.reduce((acc,d,i)=>{acc.push(i===0?0:acc[i-1]+d);return acc;},[]);
+const TMAX=CK[CK.length-1];
+
+const S={mode:'home',roomId:'',chapter:1,prevChapter:1,
+  // timeline
+  T:0,          // current rendered T
+  Tgt:0,        // target T (what we're animating toward)
+  Tspeed:1,     // playback speed multiplier while tweening
+  lastRealTime:performance.now(),
+  black:false,immersive:false,gallery:false,galleryProg:0,db:null,ready:false,unsub:null,remoteColor:'#ffd166',particles:[],
+  lemOff:{bx:0,by:0},phoneOffset:{x:0,y:0}};
+
+// ─── Particle pools ─────────────────────────────────────────────────────────
+let sphere=[], stars=[], rain=[], wind=[], dust=[];
+let castlePts=[], crossPts=[];
+let chapter8TerrainCache=null;
+
+// ─── Math helpers ───────────────────────────────────────────────────────────
+const rnd=(a=1,b=0)=>Math.random()*(a-b)+b;
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const mix=(a,b,t)=>a+(b-a)*t;
+const ease=t=>t*t*(3-2*t);
+const ease3=t=>t*t*t*(t*(t*6-15)+10);
+function hex(c){const m=c.match(/#(..)(..)(..)/);return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:[255,255,255]}
+function rgba(c,a){
+  if(c.startsWith('rgb')){const m=c.match(/(\d+),\s*(\d+),\s*(\d+)/);if(m)return`rgba(${m[1]},${m[2]},${m[3]},${a})`;}
+  const[r,g,b]=hex(c);return`rgba(${r},${g},${b},${a})`;
+}
+// Deterministic pseudo-random (no flicker on re-render)
+function stableNoise(i,salt=0){return Math.abs(Math.sin(i*127.1+salt*311.7)*43758.5453)%1}
+
+// ─── Build world ────────────────────────────────────────────────────────────
+function makeWorld(){
+  // Stars
+  stars=Array.from({length:220},()=>({x:rnd(W),y:rnd(H),r:rnd(1.3,.18),a:rnd(.8,.1),tw:rnd(.022,.003)}));
+
+  // Sphere — Fibonacci lattice, 1400 pts
+  sphere=Array.from({length:1400},(_,i)=>{
+    const t=(i+.5)/1400,phi=Math.acos(1-2*t),th=Math.PI*(1+Math.sqrt(5))*i;
+    return{x:Math.sin(phi)*Math.cos(th),y:Math.sin(phi)*Math.sin(th),z:Math.cos(phi),
+      s:rnd(1.85,.65),seed:rnd(Math.PI*2),special:false,color:'#f8fbff',
+      // blast off-screen target (stable)
+      bx:(Math.random()-.5)*4,by:(Math.random()-.5)*4};
+  });
+
+  rain=Array.from({length:500},()=>({x:rnd(W),y:rnd(H),l:rnd(28,8),v:rnd(20,8)}));
+  wind=Array.from({length:300},()=>({x:rnd(W),y:rnd(H),v:rnd(8,2.5),r:rnd(2,.4),a:rnd(.55,.1)}));
+  dust=Array.from({length:280},()=>({x:rnd(W),y:rnd(H),z:rnd(1,.04),v:rnd(3,.5),r:rnd(3,.6)}));
+  makeCastle();
+  makeCross();
+}
+
+function makeCastle(){
+  castlePts=[];
+  // base: 성 기저선. H*0.58로 올려서 성이 화면 위쪽에 크게 보이도록
+  const cx=W/2, base=H*.58, sc=Math.min(W,H)/520;
+  function rect(x,y,w,h,n){for(let i=0;i<n;i++)castlePts.push({x:cx+(x+rnd(w)-w/2)*sc,y:base+(y+rnd(h))*sc,seed:rnd(6.28)})}
+  function tri(x,y,w,h,n){for(let i=0;i<n;i++){let u=Math.random(),v=Math.random();if(u+v>1){u=1-u;v=1-v}castlePts.push({x:cx+(x+(u-.5)*w)*sc,y:base+(y-v*h)*sc,seed:rnd(6.28)})}}
+  // 본체
+  rect(0,-160,280,160,1400);
+  // 양쪽 탑
+  rect(-160,-230,80,230,800);rect(160,-230,80,230,800);
+  // 중앙 높은 탑
+  rect(0,-310,100,310,900);
+  // 탑 지붕(삼각형)
+  tri(-160,-230,110,110,560);tri(160,-230,110,110,560);
+  tri(0,-310,140,130,700);
+  // 옆 작은 탑
+  rect(-268,-115,105,115,560);rect(268,-115,105,115,560);
+  tri(-268,-115,125,85,380);tri(268,-115,125,85,380);
+}
+
+function makeCross(){
+  crossPts=[];
+  const sc=Math.min(W,H)/700, cx=W*.66, cy=H*.52;
+  function box(x,y,z,w,h,d,n){for(let i=0;i<n;i++)crossPts.push({x:cx+(x+rnd(w)-w/2)*sc,y:cy+(y+rnd(h)-h/2)*sc,z:z+rnd(d)-d/2,seed:rnd(6.28)})}
+  box(0,0,0,88,435,64,1900);
+  box(0,-108,0,315,84,64,1600);
+}
+
+function resize(){
+  DPR=Math.min(devicePixelRatio||1,2);
+  canvas.width=innerWidth*DPR; canvas.height=innerHeight*DPR;
+  canvas.style.width=innerWidth+'px'; canvas.style.height=innerHeight+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  W=innerWidth; H=innerHeight;
+  chapter8TerrainCache=null;
+  makeWorld();
+}
+addEventListener('resize',resize);
+
+// ─── Draw helpers ────────────────────────────────────────────────────────────
+
+function drawStars(alpha=1){
+  ctx.save(); ctx.globalAlpha=alpha;
+  for(const s of stars){
+    s.a+=s.tw*(Math.random()>.5?1:-1);
+    s.a=clamp(s.a,.07,.9);
+    ctx.fillStyle=`rgba(230,242,255,${s.a})`;
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,7); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawStarsRising(alpha=1,lift=0){
+  ctx.save(); ctx.globalAlpha=alpha;
+  for(const s of stars){
+    s.a+=s.tw*(Math.random()>.5?1:-1);
+    s.a=clamp(s.a,.07,.9);
+    const y=s.y-lift*H;
+    if(y<-20) continue;
+    ctx.fillStyle=`rgba(230,242,255,${s.a})`;
+    ctx.beginPath(); ctx.arc(s.x,y,s.r,0,7); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawTopStars(alpha=1){
+  ctx.save(); ctx.globalAlpha=alpha;
+  for(const s of stars){
+    if(s.y>H*.36) continue;
+    s.a+=s.tw*(Math.random()>.5?1:-1);
+    s.a=clamp(s.a,.08,.92);
+    ctx.fillStyle=`rgba(230,242,255,${s.a})`;
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function rgbFromHex(c){const m=String(c||'').match(/#(..)(..)(..)/);return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:[248,251,255]}
+function mixRgb(a,b,t){return [Math.round(mix(a[0],b[0],t)),Math.round(mix(a[1],b[1],t)),Math.round(mix(a[2],b[2],t))]}
+function rgbCss(v){return `rgb(${v[0]},${v[1]},${v[2]})`}
+function tintColor(c,t){return rgbCss(mixRgb(rgbFromHex(c),[255,255,255],t))}
+function shadeColor(c,t){return rgbCss(mixRgb(rgbFromHex(c),[0,0,0],t))}
+// ── SPHERE — surface-density layer, not a second sphere ─────────────────────
+// Base: sphere[] surface particles
+// Added density: same surface, barely expanded so it reads as richer particles
+function drawSphere(opts={}){
+  const now=performance.now();
+  let{x:cx=W/2,y:cy=H/2,r=Math.min(W,H)*.22,alpha=1,color,speed=1,
+      blast,converge,pointGather,pointExpand,goldBoost=false,darkPct=0,redPct=0,greenPct=0,whitePct=0}=opts;
+
+  // 렘니스케이트 + 폰 기울기 오프셋 (noFloat:true 옵션으로 비활성화 가능)
+  if(opts.noFloat!==true && S.lemOff){
+    cx += S.lemOff.bx * r * 0.028 + clamp(S.phoneOffset.x,-1,1) * r * 0.10;
+    cy += S.lemOff.by * r * 0.028 + clamp(S.phoneOffset.y,-1,1) * r * 0.10;
+  }
+
+  const isGold=(goldBoost||(color==='#f7c85f')) && darkPct===0;
+  const isRed=redPct>=1 && darkPct>0;
+  const isGreen=(color==='#4fd46f' || greenPct>0) && darkPct===0;
+  const isDark=darkPct>0 && !isRed;
+
+  const pulse=1+Math.sin(now*.0018)*(isGold?.026:.014);
+  r*=pulse;
+
+  const rotY=now*.00035*speed;
+  const rotX=Math.sin(now*.00025)*.32;
+  const cy2=Math.cos(rotY),sy2=Math.sin(rotY);
+  const cx2=Math.cos(rotX),sx2=Math.sin(rotX);
+
+  // 입자 하나를 3D→2D 투영하는 함수
+  function project(px,py,pz,radius){
+    let x=px*radius, y=py*radius, z=pz*radius;
+    if(blast!==undefined){
+      const t=ease(clamp(blast));
+      const far=Math.max(W,H)*(1.1+Math.abs(sphere[0]?.bx||.5)*.5);
+      // blast는 sphere 배열 원소에 bx/by 저장됨 — 인덱스 기반 처리는 아래에서
     }
+    let x1=x*cy2-z*sy2, z1=x*sy2+z*cy2;
+    let y1=y*cx2-z1*sx2, z2=y*sx2+z1*cx2;
+    const dep=z2/(radius*1.2);
+    const pers=1/(1.85-dep*.42);
+    return{sx:cx+x1*pers*1.38, sy:cy+y1*pers*1.38, dep, pers};
+  }
 
-    function loadMetadata() {
-      try {
-        const parsed = JSON.parse(localStorage.getItem(META_KEY) || '[]');
-        return Array.from({ length: SONG_COUNT }, (_, index) => ({
-          ...defaultSong(index + 1),
-          ...(parsed[index] || {})
-        }));
-      } catch {
-        return Array.from({ length: SONG_COUNT }, (_, index) => defaultSong(index + 1));
-      }
+  // 입자색 결정
+  function pickColor(px,py,pz,dep,special,specialColor){
+    if(special) return specialColor;
+    let col;
+    if(isGold){
+      const k=(dep+1)/2;
+      col=k>.88?'#fff8d8':k>.62?'#ffe26f':k>.34?'#ffc12d':'#c97e12';
+    } else if(color){
+      col=color;
+    } else {
+      col='#f8fbff';
     }
-
-    function saveMetadata() {
-      localStorage.setItem(META_KEY, JSON.stringify(metadata));
-      renderBoard();
-      renderSongStatuses();
+    if(greenPct>0 && darkPct===0){
+      const front=clamp((dep+1)/2);
+      const threshold=mix(-1.18,1.35,greenPct);
+      const localGreen=ease(clamp((threshold-py)/.34));
+      const base=[248,251,255];
+      const green=front>.55?[112,226,132]:[54,168,82];
+      col=rgbCss(mixRgb(base,green,localGreen));
     }
-
-    function defaultTeams() {
-      return {
-        count: 4,
-        teams: Array.from({ length: 6 }, (_, index) => ({
-          name: `${index + 1}팀`,
-          members: Array.from({ length: 10 }, () => ''),
-          score: 0
-        }))
-      };
-    }
-
-    function loadTeamState() {
-      const fallback = defaultTeams();
-      try {
-        const parsed = JSON.parse(localStorage.getItem(TEAM_KEY) || 'null');
-        if (!parsed) return fallback;
-        const count = Math.min(6, Math.max(3, Number(parsed.count) || 4));
-        const teams = fallback.teams.map((team, index) => ({
-          ...team,
-          ...(parsed.teams && parsed.teams[index] ? parsed.teams[index] : {}),
-          members: Array.from({ length: 10 }, (_, memberIndex) =>
-            parsed.teams && parsed.teams[index] && parsed.teams[index].members
-              ? (parsed.teams[index].members[memberIndex] || '')
-              : ''
-          ),
-          score: Number(parsed.teams && parsed.teams[index] ? parsed.teams[index].score : 0) || 0
-        }));
-        return { count, teams };
-      } catch {
-        return fallback;
-      }
-    }
-
-    function saveTeams() {
-      localStorage.setItem(TEAM_KEY, JSON.stringify(teamState));
-      renderScoreboard();
-      renderPointTeams();
-    }
-
-    function defaultRange() {
-      return { top: 0, right: 0, bottom: 0, left: 0 };
-    }
-
-    function loadRangeState() {
-      try {
-        const parsed = JSON.parse(localStorage.getItem(RANGE_KEY) || 'null');
-        if (!parsed) return defaultRange();
-        return {
-          top: clampRange(parsed.top),
-          right: clampRange(parsed.right),
-          bottom: clampRange(parsed.bottom),
-          left: clampRange(parsed.left)
-        };
-      } catch {
-        return defaultRange();
-      }
-    }
-
-    function clampRange(value) {
-      return Math.min(420, Math.max(0, Number(value) || 0));
-    }
-
-    function saveRange() {
-      localStorage.setItem(RANGE_KEY, JSON.stringify(rangeState));
-      applyRange();
-    }
-
-    function applyRange() {
-      const root = document.documentElement;
-      Object.entries(rangeState).forEach(([side, value]) => {
-        root.style.setProperty(`--safe-${side}`, `${clampRange(value)}px`);
-      });
-    }
-
-    function openDb() {
-      if (!dbPromise) {
-        dbPromise = new Promise((resolve, reject) => {
-          const request = indexedDB.open(DB_NAME, DB_VERSION);
-          request.onupgradeneeded = () => {
-            request.result.createObjectStore('songs');
-          };
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        });
-      }
-      return dbPromise;
-    }
-
-    async function putAudio(no, file) {
-      const db = await openDb();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction('songs', 'readwrite');
-        tx.objectStore('songs').put(file, String(no));
-        tx.oncomplete = resolve;
-        tx.onerror = () => reject(tx.error);
-      });
-    }
-
-    async function getAudio(no) {
-      const db = await openDb();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction('songs', 'readonly');
-        const request = tx.objectStore('songs').get(String(no));
-        request.onsuccess = () => resolve(request.result || null);
-        request.onerror = () => reject(request.error);
-      });
-    }
-
-    async function deleteAudio(no) {
-      const db = await openDb();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction('songs', 'readwrite');
-        tx.objectStore('songs').delete(String(no));
-        tx.oncomplete = resolve;
-        tx.onerror = () => reject(tx.error);
-      });
-    }
-
-    async function replaceAudioMap(audioMap) {
-      const db = await openDb();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction('songs', 'readwrite');
-        const store = tx.objectStore('songs');
-        store.clear();
-        Object.entries(audioMap).forEach(([no, blob]) => {
-          if (blob) store.put(blob, String(no));
-        });
-        tx.oncomplete = resolve;
-        tx.onerror = () => reject(tx.error);
-      });
-    }
-
-    function blobToDataUrl(blob) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(blob);
-      });
-    }
-
-    async function dataUrlToBlob(dataUrl) {
-      const response = await fetch(dataUrl);
-      return response.blob();
-    }
-
-    async function clearAudioStore() {
-      const db = await openDb();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction('songs', 'readwrite');
-        tx.objectStore('songs').clear();
-        tx.oncomplete = resolve;
-        tx.onerror = () => reject(tx.error);
-      });
-    }
-
-    function isReady(song) {
-      return Boolean(song.answer.trim() && song.fileName);
-    }
-
-    function showScreen(name) {
-      Object.values(screens).forEach((screen) => screen.classList.remove('active'));
-      screens[name].classList.add('active');
-      hidePointOverlay();
-      if (name !== 'detail') {
-        stopAudio();
-      }
-    }
-
-    function makeFruitAssignments() {
-      const doubled = [...FRUITS, ...FRUITS];
-      for (let i = doubled.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [doubled[i], doubled[j]] = [doubled[j], doubled[i]];
-      }
-      return doubled.map((fruit, index) => ({ no: index + 1, fruit }));
-    }
-
-    function activeTeams() {
-      return teamState.teams.slice(0, teamState.count);
-    }
-
-    function renderTeamSettings() {
-      const countWrap = $('teamCountButtons');
-      const editorWrap = $('teamEditorList');
-      countWrap.innerHTML = '';
-      editorWrap.innerHTML = '';
-
-      [3, 4, 5, 6].forEach((count) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = `team-count-btn ${teamState.count === count ? 'active' : ''}`;
-        button.textContent = `${count}팀`;
-        button.addEventListener('click', () => {
-          teamState.count = count;
-          saveTeams();
-          renderTeamSettings();
-        });
-        countWrap.appendChild(button);
-      });
-
-      activeTeams().forEach((team, teamIndex) => {
-        const editor = document.createElement('div');
-        editor.className = 'team-editor';
-        editor.innerHTML = `
-          <label class="team-name-row">
-            <span>팀명</span>
-            <input class="team-name-input" type="text" value="${escapeAttr(team.name)}" aria-label="${teamIndex + 1}팀 이름">
-          </label>
-          <div class="member-grid"></div>
-        `;
-
-        const nameInput = editor.querySelector('.team-name-input');
-        const memberGrid = editor.querySelector('.member-grid');
-
-        nameInput.addEventListener('input', () => {
-          team.name = nameInput.value;
-          saveTeams();
-        });
-
-        team.members.forEach((member, memberIndex) => {
-          const input = document.createElement('input');
-          input.className = 'member-input';
-          input.type = 'text';
-          input.value = member;
-          input.placeholder = `${memberIndex + 1}`;
-          input.setAttribute('aria-label', `${teamIndex + 1}팀 ${memberIndex + 1}번 팀원`);
-          input.addEventListener('input', () => {
-            team.members[memberIndex] = input.value;
-            saveTeams();
-          });
-          memberGrid.appendChild(input);
-        });
-
-        editorWrap.appendChild(editor);
-      });
-    }
-
-    function renderScoreboard() {
-      const scoreList = $('scoreList');
-      const teams = activeTeams();
-      scoreList.style.gridTemplateColumns = `repeat(${teams.length}, minmax(0, 1fr))`;
-      scoreList.innerHTML = '';
-      teams.forEach((team) => {
-        const card = document.createElement('div');
-        card.className = 'score-card';
-        card.innerHTML = `
-          <span class="score-name">${escapeHtml(team.name.trim() || '이름 없음')}</span>
-          <span class="score-value">${team.score}점</span>
-        `;
-        scoreList.appendChild(card);
-      });
-    }
-
-    function renderPointTeams() {
-      const list = $('pointTeamList');
-      list.innerHTML = '';
-      activeTeams().forEach((team, index) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'point-team-btn';
-        button.textContent = team.name.trim() || `${index + 1}팀`;
-        button.addEventListener('click', () => awardPoint(index));
-        list.appendChild(button);
-      });
-    }
-
-    function renderRangeSettings() {
-      const box = $('rangeBox');
-      box.style.left = `${rangeState.left}px`;
-      box.style.top = `${rangeState.top}px`;
-      box.style.right = `${rangeState.right}px`;
-      box.style.bottom = `${rangeState.bottom}px`;
-      $('rangeReadout').innerHTML = `
-        <span>위 ${rangeState.top}px</span>
-        <span>오른쪽 ${rangeState.right}px</span>
-        <span>아래 ${rangeState.bottom}px</span>
-        <span>왼쪽 ${rangeState.left}px</span>
-      `;
-    }
-
-    function startRangeDrag(event, mode) {
-      event.preventDefault();
-      const stageRect = $('rangeStage').getBoundingClientRect();
-      const start = {
-        x: event.clientX,
-        y: event.clientY,
-        range: { ...rangeState },
-        stageWidth: stageRect.width,
-        stageHeight: stageRect.height
-      };
-
-      const onMove = (moveEvent) => updateRangeDrag(moveEvent, mode, start);
-      const onUp = () => {
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-      };
-
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp, { once: true });
-    }
-
-    function updateRangeDrag(event, mode, start) {
-      const dx = event.clientX - start.x;
-      const dy = event.clientY - start.y;
-      const minSize = 260;
-      const maxLeft = Math.max(0, start.stageWidth - start.range.right - minSize);
-      const maxRight = Math.max(0, start.stageWidth - start.range.left - minSize);
-      const maxTop = Math.max(0, start.stageHeight - start.range.bottom - minSize);
-      const maxBottom = Math.max(0, start.stageHeight - start.range.top - minSize);
-      const next = { ...start.range };
-
-      if (mode === 'move') {
-        const width = start.stageWidth - start.range.left - start.range.right;
-        const height = start.stageHeight - start.range.top - start.range.bottom;
-        const maxMoveLeft = start.stageWidth - width;
-        const maxMoveTop = start.stageHeight - height;
-        const left = clampTo(start.range.left + dx, 0, maxMoveLeft);
-        const top = clampTo(start.range.top + dy, 0, maxMoveTop);
-        next.left = Math.round(left);
-        next.top = Math.round(top);
-        next.right = Math.round(start.stageWidth - width - left);
-        next.bottom = Math.round(start.stageHeight - height - top);
+    if(darkPct>0){
+      const bias=clamp(((px+1)/2)*0.6+((py+1)/2)*0.4);
+      if(redPct>0){
+        const threshold=clamp(1-bias)*0.9;
+        const localRed=clamp((redPct-threshold)/(1-threshold+0.001));
+        const r2=Math.round(mix(8,195,ease(localRed)));
+        const g2=Math.round(mix(8,14,ease(localRed)));
+        const b2=Math.round(mix(8,22,ease(localRed)));
+        col=`rgb(${r2},${g2},${b2})`;
       } else {
-        if (mode.includes('w')) next.left = Math.round(clampTo(start.range.left + dx, 0, maxLeft));
-        if (mode.includes('e')) next.right = Math.round(clampTo(start.range.right - dx, 0, maxRight));
-        if (mode.includes('n')) next.top = Math.round(clampTo(start.range.top + dy, 0, maxTop));
-        if (mode.includes('s')) next.bottom = Math.round(clampTo(start.range.bottom - dy, 0, maxBottom));
-      }
-
-      rangeState = {
-        top: clampRange(next.top),
-        right: clampRange(next.right),
-        bottom: clampRange(next.bottom),
-        left: clampRange(next.left)
-      };
-      saveRange();
-      renderRangeSettings();
-    }
-
-    function clampTo(value, min, max) {
-      return Math.min(max, Math.max(min, value));
-    }
-
-    function renderBoard() {
-      const grid = $('fruitGrid');
-      grid.innerHTML = '';
-      fruitAssignments.forEach(({ no, fruit }, index) => {
-        const song = metadata[no - 1];
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = `fruit-card ${isReady(song) ? 'ready' : 'unset'}`;
-        button.style.animationDelay = `${index * 18}ms`;
-        button.setAttribute('aria-label', `${no}번 과일`);
-        button.innerHTML = `
-          <span class="fruit-emoji">${fruit}</span>
-          <span class="fruit-number">${no}</span>
-        `;
-        button.addEventListener('click', () => openDetail(no, fruit, button));
-        grid.appendChild(button);
-      });
-    }
-
-    function renderMenu() {
-      const list = $('songList');
-      list.innerHTML = '';
-      metadata.forEach((song) => {
-        const row = document.createElement('div');
-        row.className = 'song-row';
-        row.innerHTML = `
-          <div class="song-no">${song.no}</div>
-          <input class="answer-input" type="text" value="${escapeAttr(song.answer)}" placeholder="정답 입력" aria-label="${song.no}번 정답">
-          <div class="file-cell">
-            <label class="file-label">
-              파일선택
-              <input type="file" accept="audio/*" aria-label="${song.no}번 음원 파일">
-            </label>
-            <div class="file-name">${song.fileName ? escapeHtml(song.fileName) : '선택된 파일 없음'}</div>
-          </div>
-          <button class="small-btn" type="button">지우기</button>
-          <div class="status-pill ${isReady(song) ? 'ready' : ''}" data-status="${song.no}">
-            ${isReady(song) ? '준비됨' : '미설정'}
-          </div>
-        `;
-
-        const input = row.querySelector('.answer-input');
-        const fileInput = row.querySelector('input[type="file"]');
-        const clearButton = row.querySelector('.small-btn');
-
-        input.addEventListener('input', () => {
-          song.answer = input.value;
-          song.updatedAt = Date.now();
-          saveMetadata();
-        });
-
-        fileInput.addEventListener('change', async () => {
-          const file = fileInput.files && fileInput.files[0];
-          if (!file) return;
-          await handleFileSelection(song.no, file);
-          renderMenu();
-        });
-
-        clearButton.addEventListener('click', async () => {
-          await deleteAudio(song.no);
-          metadata[song.no - 1] = defaultSong(song.no);
-          saveMetadata();
-          renderMenu();
-          showToast(`${song.no}번을 비웠습니다.`);
-        });
-
-        list.appendChild(row);
-      });
-    }
-
-    function renderSongStatuses() {
-      metadata.forEach((song) => {
-        const status = document.querySelector(`[data-status="${song.no}"]`);
-        if (!status) return;
-        status.classList.toggle('ready', isReady(song));
-        status.textContent = isReady(song) ? '준비됨' : '미설정';
-      });
-    }
-
-    async function shuffleSongs() {
-      const originalAudio = {};
-      await Promise.all(
-        metadata.map(async (song) => {
-          originalAudio[song.no] = await getAudio(song.no);
-        })
-      );
-
-      const shuffled = metadata.map((song) => ({ ...song }));
-      for (let i = shuffled.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-
-      const nextAudio = {};
-      metadata = shuffled.map((song, index) => {
-        const nextNo = index + 1;
-        nextAudio[nextNo] = originalAudio[song.no];
-        return {
-          ...song,
-          no: nextNo,
-          updatedAt: Date.now()
-        };
-      });
-
-      await replaceAudioMap(nextAudio);
-      saveMetadata();
-      renderMenu();
-      showToast('입력한 곡 번호를 무작위로 섞었습니다.');
-    }
-
-    async function exportSongSettings() {
-      const songs = [];
-      for (const song of metadata) {
-        const audio = await getAudio(song.no);
-        songs.push({
-          ...song,
-          audioDataUrl: audio ? await blobToDataUrl(audio) : '',
-          audioType: audio ? audio.type : song.mimeType
-        });
-      }
-
-      const payload = {
-        app: 'fruit-music-guess',
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        songs
-      };
-      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      const date = new Date().toISOString().slice(0, 10).replaceAll('-', '');
-      anchor.href = url;
-      anchor.download = `음악맞추기_저장값_${date}.json`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
-      showToast('저장값 파일을 만들었습니다.');
-    }
-
-    async function importSongSettings(file) {
-      const text = await file.text();
-      const payload = JSON.parse(text);
-      if (!payload || payload.app !== 'fruit-music-guess' || !Array.isArray(payload.songs)) {
-        throw new Error('지원하지 않는 저장값 파일입니다.');
-      }
-
-      const nextAudio = {};
-      metadata = Array.from({ length: SONG_COUNT }, (_, index) => {
-        const no = index + 1;
-        const saved = payload.songs.find((song) => Number(song.no) === no) || {};
-        if (saved.audioDataUrl) {
-          nextAudio[no] = saved.audioDataUrl;
-        }
-        return {
-          ...defaultSong(no),
-          answer: saved.answer || '',
-          fileName: saved.fileName || '',
-          mimeType: saved.mimeType || saved.audioType || '',
-          duration: Number(saved.duration) || 0,
-          highlight1: Number(saved.highlight1) || 0,
-          highlight2: Number(saved.highlight2) || 0,
-          updatedAt: Date.now()
-        };
-      });
-
-      const audioMap = {};
-      for (const [no, dataUrl] of Object.entries(nextAudio)) {
-        audioMap[no] = await dataUrlToBlob(dataUrl);
-      }
-
-      await replaceAudioMap(audioMap);
-      saveMetadata();
-      renderMenu();
-      showToast('저장값을 불러왔습니다.');
-    }
-
-    async function handleFileSelection(no, file) {
-      const duration = await readAudioDuration(file);
-      const highlights = pickHighlights(duration);
-      await putAudio(no, file);
-      metadata[no - 1] = {
-        ...metadata[no - 1],
-        fileName: file.name,
-        mimeType: file.type,
-        duration,
-        highlight1: highlights[0],
-        highlight2: highlights[1],
-        updatedAt: Date.now()
-      };
-      saveMetadata();
-      showToast(`${no}번 음원에서 약 4초 하이라이트 2개를 준비했습니다.`);
-    }
-
-    function readAudioDuration(file) {
-      return new Promise((resolve) => {
-        const url = URL.createObjectURL(file);
-        const audio = new Audio();
-        audio.preload = 'metadata';
-        audio.onloadedmetadata = () => {
-          const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
-          URL.revokeObjectURL(url);
-          resolve(duration);
-        };
-        audio.onerror = () => {
-          URL.revokeObjectURL(url);
-          resolve(0);
-        };
-        audio.src = url;
-      });
-    }
-
-    function pickHighlights(duration) {
-      if (!duration || duration <= HIGHLIGHT_SECONDS + 1) return [0, 0];
-      const maxStart = Math.max(0, duration - HIGHLIGHT_SECONDS - .25);
-      const first = Math.min(maxStart, Math.max(0, duration * .28));
-      const second = Math.min(maxStart, Math.max(first + HIGHLIGHT_SECONDS + 2, duration * .62));
-      return [Number(first.toFixed(2)), Number(second.toFixed(2))];
-    }
-
-    function openDetail(no, fruit, sourceButton) {
-      currentSongNo = no;
-      sourceButton.classList.add('zooming');
-      setTimeout(() => sourceButton.classList.remove('zooming'), 520);
-      setTimeout(() => {
-        const song = metadata[no - 1];
-        $('bigFruit').innerHTML = `
-          <span class="fruit-emoji">${fruit}</span>
-          <span class="fruit-number">${no}</span>
-        `;
-        $('answerText').textContent = song.answer.trim() || '정답 미입력';
-        $('paperBoard').classList.remove('revealed');
-        $('awardPointBtn').classList.remove('show');
-        updatePlayButtons();
-        showScreen('detail');
-      }, 240);
-    }
-
-    function revealAnswer() {
-      $('paperBoard').classList.add('revealed');
-      $('awardPointBtn').classList.add('show');
-    }
-
-    function showPointOverlay() {
-      renderPointTeams();
-      $('pointTitle').textContent = '점수 줄 팀을 고르세요';
-      $('pointFeedback').textContent = '';
-      $('pointFeedback').classList.remove('show');
-      $('pointOverlay').classList.remove('awarded');
-      $('pointOverlay').classList.add('show');
-      clearTimeout(pointOverlayTimer);
-    }
-
-    function hidePointOverlay(delay = 0) {
-      clearTimeout(pointOverlayTimer);
-      pointOverlayTimer = setTimeout(() => {
-        $('pointOverlay').classList.remove('show');
-      }, delay);
-    }
-
-    function awardPoint(teamIndex) {
-      const team = activeTeams()[teamIndex];
-      if (!team) return;
-      team.score += POINT_VALUE;
-      saveTeams();
-      $('pointOverlay').classList.add('awarded');
-      $('pointTitle').textContent = '점수 지급 완료!';
-      $('pointFeedback').textContent = `${team.name || `${teamIndex + 1}팀`} +${POINT_VALUE}점`;
-      $('pointFeedback').classList.add('show');
-      document.querySelectorAll('.point-team-btn').forEach((button, index) => {
-        button.disabled = true;
-        button.classList.toggle('selected', index === teamIndex);
-      });
-      showToast(`${team.name || `${teamIndex + 1}팀`} +${POINT_VALUE}점`);
-      hidePointOverlay(1000);
-    }
-
-    function resetTeams() {
-      teamState = defaultTeams();
-      saveTeams();
-      renderTeamSettings();
-      showToast('팀 설정과 점수를 초기화했습니다.');
-    }
-
-    function finishGame() {
-      const rankings = [...activeTeams()]
-        .map((team, index) => ({ ...team, originalIndex: index }))
-        .sort((a, b) => b.score - a.score || a.originalIndex - b.originalIndex)
-        .slice(0, 3);
-
-      const podium = $('podium');
-      podium.innerHTML = '';
-      const orderedRanks = [2, 1, 3];
-      orderedRanks.forEach((rank) => {
-        const team = rankings[rank - 1] || { name: `${rank}등 없음`, score: 0 };
-        const card = document.createElement('div');
-        card.className = `podium-card rank-${rank}`;
-        card.innerHTML = `
-          <div class="rank-label">${rank}등</div>
-          <div class="rank-team">${escapeHtml(team.name || '이름 없음')}</div>
-          <div class="rank-score">${team.score}점</div>
-        `;
-        podium.appendChild(card);
-      });
-
-      $('awardScreen').classList.add('show');
-      clearTimeout(awardTimer);
-      const cards = Array.from(podium.querySelectorAll('.podium-card'));
-      [2, 0, 1].forEach((cardIndex, revealIndex) => {
-        awardTimer = setTimeout(() => {
-          cards[cardIndex].classList.add('show');
-        }, revealIndex * 950);
-      });
-    }
-
-    function updatePlayButtons() {
-      const song = metadata[currentSongNo - 1];
-      const enabled = Boolean(song.fileName);
-      $('playHighlight1').disabled = !enabled;
-      $('playHighlight2').disabled = !enabled;
-      $('playFull').disabled = !enabled;
-    }
-
-    async function playSong(mode) {
-      if (!currentSongNo) return;
-      const song = metadata[currentSongNo - 1];
-      if (!song.fileName) {
-        showToast('먼저 메뉴에서 음원 파일을 선택해 주세요.');
-        return;
-      }
-
-      const blob = await getAudio(currentSongNo);
-      if (!blob) {
-        showToast('저장된 음원을 찾지 못했습니다. 메뉴에서 다시 선택해 주세요.');
-        return;
-      }
-
-      stopAudio();
-      currentAudioUrl = URL.createObjectURL(blob);
-      player.src = currentAudioUrl;
-      await waitForPlayerReady();
-
-      const start = mode === 'h1' ? song.highlight1 : mode === 'h2' ? song.highlight2 : 0;
-      player.currentTime = start || 0;
-      await player.play().catch(() => {
-        showToast('재생을 시작하지 못했습니다. 버튼을 한 번 더 눌러 주세요.');
-      });
-
-      if (mode !== 'full') {
-        clipTimer = setTimeout(stopAudio, HIGHLIGHT_SECONDS * 1000);
+        col='#080808';
       }
     }
+    return col;
+  }
 
-    function waitForPlayerReady() {
-      if (player.readyState >= 1) return Promise.resolve();
-      return new Promise((resolve) => {
-        const done = () => {
-          player.removeEventListener('loadedmetadata', done);
-          player.removeEventListener('error', done);
-          resolve();
-        };
-        player.addEventListener('loadedmetadata', done, { once: true });
-        player.addEventListener('error', done, { once: true });
-      });
+  // ── 외층 포인트 수집 ─────────────────────────────────────────────────────
+  const outer=[];
+  for(const p of sphere){
+    let px=p.x, py=p.y, pz=p.z;
+    let ox=px*r, oy=py*r, oz=pz*r;
+    if(blast!==undefined){
+      const t=ease(clamp(blast));
+      const far=Math.max(W,H)*(1.1+Math.abs(p.bx)*.5);
+      ox=mix(ox,p.bx*far,t); oy=mix(oy,p.by*far,t); oz=mix(oz,pz*r*3,t);
+      // 투영은 직접 계산
+      let x1=ox*cy2-oz*sy2, z1=ox*sy2+oz*cy2;
+      let y1=oy*cx2-z1*sx2, z2=oy*sx2+z1*cx2;
+      const dep=z2/(r*1.2); const pers=1/(1.85-dep*.42);
+      const col=(!p.special && whitePct>0 && stableNoise(p.seed,441)<whitePct)?'#f8fbff':pickColor(px,py,pz,dep,p.special,p.color);
+      outer.push({sx:cx+x1*pers*1.38,sy:cy+y1*pers*1.38,dep,s:p.s*(1+dep*.25)*1.3,col,special:p.special});
+      continue;
     }
+    if(converge!==undefined){
+      const t=ease(clamp(converge));
+      const far=Math.max(W,H)*(1.0+Math.abs(p.bx)*.5);
+      ox=mix(p.bx*far,ox,t); oy=mix(p.by*far,oy,t); oz=mix(pz*r*3,oz,t);
+      let x1=ox*cy2-oz*sy2, z1=ox*sy2+oz*cy2;
+      let y1=oy*cx2-z1*sx2, z2=oy*sx2+z1*cx2;
+      const dep=z2/(r*1.2); const pers=1/(1.85-dep*.42);
+      const col=(!p.special && whitePct>0 && stableNoise(p.seed,441)<whitePct)?'#f8fbff':pickColor(px,py,pz,dep,p.special,p.color);
+      outer.push({sx:cx+x1*pers*1.38,sy:cy+y1*pers*1.38,dep,s:p.s*(1+dep*.25)*1.3,col,special:p.special});
+      continue;
+    }
+    if(pointGather!==undefined || pointExpand!==undefined){
+      const g=ease(clamp(pointGather??1));
+      const e=ease(clamp(pointExpand??0));
+      const far=Math.max(W,H)*(1.0+Math.abs(p.bx)*.5);
+      const pointR=r*.045;
+      const fromX=p.bx*far, fromY=p.by*far, fromZ=pz*r*3;
+      const pointX=px*pointR, pointY=py*pointR, pointZ=pz*pointR;
+      ox=mix(mix(fromX,pointX,g),ox,e);
+      oy=mix(mix(fromY,pointY,g),oy,e);
+      oz=mix(mix(fromZ,pointZ,g),oz,e);
+      let x1=ox*cy2-oz*sy2, z1=ox*sy2+oz*cy2;
+      let y1=oy*cx2-z1*sx2, z2=oy*sx2+z1*cx2;
+      const dep=z2/(r*1.2); const pers=1/(1.85-dep*.42);
+      const col=(!p.special && whitePct>0 && stableNoise(p.seed,441)<whitePct)?'#f8fbff':pickColor(px,py,pz,dep,p.special,p.color);
+      outer.push({sx:cx+x1*pers*1.38,sy:cy+y1*pers*1.38,dep,s:p.s*(1+dep*.25)*1.3,col,special:p.special});
+      continue;
+    }
+    let x1=ox*cy2-oz*sy2, z1=ox*sy2+oz*cy2;
+    let y1=oy*cx2-z1*sx2, z2=oy*sx2+z1*cx2;
+    const dep=z2/(r*1.2); const pers=1/(1.85-dep*.42);
+    const col=(!p.special && whitePct>0 && stableNoise(p.seed,441)<whitePct)?'#f8fbff':pickColor(px,py,pz,dep,p.special,p.color);
+    outer.push({sx:cx+x1*pers*1.38,sy:cy+y1*pers*1.38,dep,s:p.s*(1+dep*.25)*1.3,col,special:p.special});
+  }
 
-    function stopAudio() {
-      if (clipTimer) {
-        clearTimeout(clipTimer);
-        clipTimer = null;
+  outer.sort((a,b)=>a.dep-b.dep);
+
+  ctx.save();
+  ctx.globalAlpha=alpha;
+
+  // ── 외부 glow halo ──────────────────────────────────────────────────────
+  const glowR=isGold?r*3.0:r*2.0;
+  const grd=ctx.createRadialGradient(cx,cy,r*.05,cx,cy,glowR);
+  if(isGold){
+    grd.addColorStop(0,'rgba(255,254,215,.78)');
+    grd.addColorStop(.15,'rgba(255,225,85,.58)');
+    grd.addColorStop(.4,'rgba(247,175,32,.25)');
+    grd.addColorStop(.7,'rgba(247,200,95,.08)');
+    grd.addColorStop(1,'rgba(247,200,95,0)');
+  } else if(isRed){
+    grd.addColorStop(0,'rgba(220,18,28,.0)'); // 내부는 별도 core로
+    grd.addColorStop(.3,'rgba(180,12,20,.0)');
+    grd.addColorStop(1,'rgba(160,8,16,0)');
+  } else if(darkPct>0){
+    grd.addColorStop(0,'rgba(28,28,30,.06)');
+    grd.addColorStop(1,'rgba(20,20,22,0)');
+  } else if(color==='#9f1424'||color==='#bf1830'){
+    grd.addColorStop(0,'rgba(180,20,36,.4)');
+    grd.addColorStop(.5,'rgba(120,12,24,.14)');
+    grd.addColorStop(1,'rgba(120,12,24,0)');
+  } else {
+    // 흰색 스피어
+    grd.addColorStop(0,'rgba(210,225,255,.28)');
+    grd.addColorStop(.45,'rgba(200,218,255,.10)');
+    grd.addColorStop(1,'rgba(200,218,255,0)');
+  }
+  ctx.fillStyle=grd;
+  ctx.beginPath();ctx.arc(cx,cy,glowR,0,7);ctx.fill();
+
+  // ── 내부 core glow ───────────────────────────────────────────────────────
+  if(isGold){
+    const core=ctx.createRadialGradient(cx,cy,0,cx,cy,r*.62);
+    core.addColorStop(0,'rgba(255,254,230,.42)');
+    core.addColorStop(.5,'rgba(255,235,100,.18)');
+    core.addColorStop(1,'rgba(255,220,80,0)');
+    ctx.fillStyle=core;
+    ctx.beginPath();ctx.arc(cx,cy,r*.62,0,7);ctx.fill();
+  } else if(isRed){
+    // 빨간 스피어 내부 붉은 core glow
+    const core=ctx.createRadialGradient(cx,cy,0,cx,cy,r*.75);
+    core.addColorStop(0,`rgba(255,30,20,${.55*(1-whitePct)})`);
+    core.addColorStop(.3,`rgba(220,15,18,${.32*(1-whitePct)})`);
+    core.addColorStop(.65,`rgba(180,8,14,${.14*(1-whitePct)})`);
+    core.addColorStop(1,'rgba(160,5,10,0)');
+    ctx.fillStyle=core;
+    ctx.beginPath();ctx.arc(cx,cy,r*.75,0,7);ctx.fill();
+    // 바깥 붉은 halo
+    const halo=ctx.createRadialGradient(cx,cy,r*.5,cx,cy,r*2.2);
+    halo.addColorStop(0,`rgba(200,12,18,${.22*(1-whitePct)})`);
+    halo.addColorStop(.5,`rgba(160,8,14,${.08*(1-whitePct)})`);
+    halo.addColorStop(1,'rgba(140,5,10,0)');
+    ctx.fillStyle=halo;
+    ctx.beginPath();ctx.arc(cx,cy,r*2.2,0,7);ctx.fill();
+    if(whitePct>0){
+      const whiteCore=ctx.createRadialGradient(cx,cy,0,cx,cy,r*.6);
+      whiteCore.addColorStop(0,`rgba(230,238,255,${.22*whitePct})`);
+      whiteCore.addColorStop(1,'rgba(210,225,255,0)');
+      ctx.fillStyle=whiteCore;
+      ctx.beginPath();ctx.arc(cx,cy,r*.6,0,7);ctx.fill();
+    }
+  } else if(!isGold && darkPct===0){
+    // 흰 스피어 내부 soft core
+    const core=ctx.createRadialGradient(cx,cy,0,cx,cy,r*.55);
+    core.addColorStop(0,'rgba(230,238,255,.22)');
+    core.addColorStop(1,'rgba(210,225,255,0)');
+    ctx.fillStyle=core;
+    ctx.beginPath();ctx.arc(cx,cy,r*.55,0,7);ctx.fill();
+  }
+  // ── 표면 밀도 보강 레이어: 같은 겉면에 아주 얇게 입자만 추가 ─────────────
+  for(const p of outer){
+    if(p.special) continue;
+    const a=clamp((p.dep+1)*.10+.035,.035,.22)*alpha;
+    const sx=cx+(p.sx-cx)*1.018;
+    const sy=cy+(p.sy-cy)*1.018;
+    ctx.fillStyle=rgba(p.col,a);
+    ctx.beginPath();ctx.arc(sx,sy,Math.max(.55,p.s*.52),0,7);ctx.fill();
+  }
+
+  // ── 외층 입자 ────────────────────────────────────────────────────────────
+  for(const p of outer){
+    const a=clamp((p.dep+1)*.40+.18,.1,1)*(isGold?1.14:1);
+    ctx.fillStyle=rgba(p.col,a*alpha);
+    ctx.beginPath();ctx.arc(p.sx,p.sy,p.special?p.s*2.0:p.s,0,7);ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// ── CASTLE ─────────────────────────────────────────────────────────────────
+function drawCastle(prog){
+  const t=ease(prog);
+  const now=performance.now();
+  ctx.save();
+  // 성 전체 glow 후광
+  const cx=W/2, topY=castlePts.reduce((m,p)=>Math.min(m,p.y),H);
+  const grd=ctx.createRadialGradient(cx,topY+60,0,cx,topY+60,Math.min(W,H)*.55);
+  grd.addColorStop(0,`rgba(255,248,180,${.14*t})`);
+  grd.addColorStop(.5,`rgba(247,200,95,${.06*t})`);
+  grd.addColorStop(1,'rgba(247,200,95,0)');
+  ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
+  // 입자 그리기
+  for(const p of castlePts){
+    const pulse=Math.sin(now*.0009+p.seed)*.5+.5;
+    const goldK=pulse;
+    const r=goldK>.6?255:247, g=goldK>.6?248:200, b=goldK>.6?200:95;
+    const alpha=clamp(.28+.68*t);
+    ctx.fillStyle=`rgba(${r},${g},${b},${alpha})`;
+    ctx.beginPath(); ctx.arc(p.x,p.y,1.3+t*.7,0,7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ── WHITE CRACK TRANSITION ──────────────────────────────────────────────────
+function drawShatter(prog){
+  const t=clamp(prog);
+  const step=Math.min(8,Math.floor(t*8)+1);
+  const local=ease((t*8)%1);
+  const reveal=(i,total)=>{
+    if(t>=.995) return 1;
+    const crackStep=Math.floor(i/total*8);
+    return clamp((step-1+local-crackStep)/.8);
+  };
+  ctx.save();
+  ctx.fillStyle='#f7fbff';
+  ctx.fillRect(0,0,W,H);
+
+  const cx=W*.5, cy=H*.5;
+  const impactR=Math.min(W,H)*(.035+.055*ease(clamp(t*1.5)));
+  ctx.save();
+  ctx.globalAlpha=.18+.28*t;
+  for(let ring=0;ring<3;ring++){
+    const rr=impactR*(1+ring*.45);
+    ctx.strokeStyle=`rgba(20,24,34,${(.28-ring*.07)*t})`;
+    ctx.lineWidth=1.1-ring*.18;
+    ctx.beginPath();
+    for(let i=0;i<=64;i++){
+      const a=i/64*Math.PI*2;
+      const wob=1+(stableNoise(i+ring*100,72)-.5)*.16;
+      const x=cx+Math.cos(a)*rr*wob;
+      const y=cy+Math.sin(a)*rr*wob;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  const rayCount=54;
+  for(let i=0;i<rayCount;i++){
+    const gate=reveal(i,rayCount);
+    if(gate<=0) continue;
+    const a=i*(Math.PI*2/rayCount)+(stableNoise(i,61)-.5)*.24;
+    const len=Math.max(W,H)*mix(.18,.98,stableNoise(i,62))*ease(gate);
+    const bend=(stableNoise(i,63)-.5)*Math.min(W,H)*.08;
+    ctx.strokeStyle=`rgba(12,14,24,${(.12+.56*t)*gate})`;
+    ctx.lineWidth=.55+1.45*stableNoise(i,64);
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(a)*impactR*.45,cy+Math.sin(a)*impactR*.45);
+    const segments=3+Math.floor(stableNoise(i,65)*3);
+    for(let s=1;s<=segments;s++){
+      const k=s/segments;
+      const wob=(stableNoise(i*13+s,66)-.5)*bend*k;
+      const x=cx+Math.cos(a)*len*k+Math.cos(a+Math.PI/2)*wob;
+      const y=cy+Math.sin(a)*len*k+Math.sin(a+Math.PI/2)*wob;
+      ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    if(gate>.36){
+      const branches=1+Math.floor(stableNoise(i,67)*3);
+      for(let b=0;b<branches;b++){
+        const k=mix(.28,.82,stableNoise(i*7+b,68));
+        const ba=a+(stableNoise(i*11+b,69)>.5?1:-1)*mix(.35,1.0,stableNoise(i*17+b,70));
+        const bl=len*mix(.12,.34,stableNoise(i*19+b,71))*gate;
+        const sx=cx+Math.cos(a)*len*k;
+        const sy=cy+Math.sin(a)*len*k;
+        ctx.strokeStyle=`rgba(12,14,24,${(.08+.36*t)*gate})`;
+        ctx.lineWidth=.45+stableNoise(i*23+b,72)*.75;
+        ctx.beginPath();
+        ctx.moveTo(sx,sy);
+        ctx.lineTo(sx+Math.cos(ba)*bl,sy+Math.sin(ba)*bl);
+        ctx.stroke();
       }
-      player.pause();
-      player.removeAttribute('src');
-      player.load();
-      if (currentAudioUrl) {
-        URL.revokeObjectURL(currentAudioUrl);
-        currentAudioUrl = null;
+    }
+  }
+
+  const ringCount=5;
+  for(let ring=0;ring<ringCount;ring++){
+    const gate=reveal(ring+18,rayCount);
+    if(gate<=0) continue;
+    const rr=Math.min(W,H)*mix(.12,.46,ring/(ringCount-1))*ease(gate);
+    ctx.strokeStyle=`rgba(12,14,24,${(.05+.18*t)*gate})`;
+    ctx.lineWidth=.45;
+    ctx.beginPath();
+    for(let i=0;i<=80;i++){
+      const a=i/80*Math.PI*2;
+      if(stableNoise(i+ring*200,73)<.18) continue;
+      const wob=1+(stableNoise(i+ring*200,74)-.5)*.22;
+      const x=cx+Math.cos(a)*rr*wob;
+      const y=cy+Math.sin(a)*rr*wob;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  ctx.globalAlpha=clamp(1-t*1.18,0,1);
+  ctx.fillStyle='#f7fbff';
+  ctx.fillRect(0,0,W,H);
+  ctx.restore();
+}
+// ── DARK ALLEY ──────────────────────────────────────────────────────────────
+function drawAlley(prog, opts={}){
+  const noTriangles=!!opts.noTriangles;
+  const noWeather=!!opts.noWeather;
+  const bgAlpha=opts.bgAlpha===undefined?1:clamp(opts.bgAlpha);
+  const weatherAlpha=opts.weatherAlpha===undefined?1:clamp(opts.weatherAlpha);
+  const now=performance.now();
+  ctx.save();
+  ctx.globalAlpha=bgAlpha;
+  // Background
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#040406'); g.addColorStop(.5,'#0d0d0f'); g.addColorStop(1,'#0a0a0b');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+  if(!noTriangles){
+    // Wall left
+    ctx.fillStyle='#111013';
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(W*.42,0); ctx.lineTo(W*.33,H*.52); ctx.lineTo(0,H*.72); ctx.fill();
+    // Wall right
+    ctx.fillStyle='#101012';
+    ctx.beginPath(); ctx.moveTo(W,0); ctx.lineTo(W*.58,0); ctx.lineTo(W*.67,H*.52); ctx.lineTo(W,H*.72); ctx.fill();
+  }
+
+  // Glossy floor: reflective horizontal gradient
+  const floor=ctx.createLinearGradient(0,H*.54,0,H);
+  floor.addColorStop(0,'#1a1a1e'); floor.addColorStop(.3,'#141416'); floor.addColorStop(1,'#0a0a0c');
+  ctx.fillStyle=floor;
+  ctx.fillRect(0,H*.54,W,H-H*.54);
+
+  // Floor reflection sheen lines
+  ctx.save(); ctx.globalAlpha=.12;
+  for(let y=H*.56;y<H;y+=28){
+    ctx.strokeStyle='rgba(255,255,255,.18)';
+    ctx.lineWidth=.8;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y+16); ctx.stroke();
+  }
+  ctx.restore();
+  ctx.restore();
+
+  if(!noWeather){
+    // Rain
+    const rainAlpha=clamp(prog*1.6,.0,1)*weatherAlpha;
+    ctx.save(); ctx.globalAlpha=rainAlpha;
+    ctx.strokeStyle='rgba(180,210,230,.32)'; ctx.lineWidth=.9;
+    for(const r of rain){
+      r.y+=r.v*(1+prog*.8); r.x-=1.8;
+      if(r.y>H+40){r.y=-40;r.x=rnd(W)}
+      ctx.beginPath(); ctx.moveTo(r.x,r.y); ctx.lineTo(r.x-5,r.y+r.l); ctx.stroke();
+    }
+    ctx.restore();
+
+    // Lightning flash (screen-wide, no bolt shape): less frequent, longer, softer
+    const flashWindow=2100;
+    const flashIndex=Math.floor(now/flashWindow);
+    const flashPhase=(now%flashWindow)/flashWindow;
+    const flashHit=stableNoise(flashIndex,811)>.74;
+    if(flashHit && flashPhase<.18){
+      const flashEase=Math.sin((flashPhase/.18)*Math.PI);
+      ctx.fillStyle=`rgba(245,248,255,${.18*flashEase*weatherAlpha})`;
+      ctx.fillRect(0,0,W,H);
+    }
+  }
+}
+// ── SUNSET ──────────────────────────────────────────────────────────────────
+function drawSunset(){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#6b3e6e'); g.addColorStop(.34,'#d8854a'); g.addColorStop(.62,'#b86e3c'); g.addColorStop(1,'#5b321c');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#8a532a';
+  ctx.beginPath(); ctx.moveTo(0,H*.72);
+  for(let x=0;x<=W;x+=72)ctx.lineTo(x,H*.64+Math.sin(x*.006)*42);
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.fill();
+  ctx.fillStyle='rgba(68,40,20,.5)';
+  ctx.beginPath(); ctx.moveTo(0,H*.82);
+  for(let x=0;x<=W;x+=72)ctx.lineTo(x,H*.78+Math.sin(x*.008+2)*32);
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.fill();
+}
+
+function drawDust(){
+  ctx.save(); ctx.globalAlpha=.5;
+  for(const d of dust){
+    d.y+=d.v; d.x+=Math.sin(performance.now()*.001+d.z)*1.8;
+    if(d.y>H){d.y=H*.46;d.x=rnd(W)}
+    ctx.fillStyle=`rgba(152,96,50,${.14+d.z*.32})`;
+    ctx.beginPath(); ctx.arc(d.x,d.y,d.r*(1+d.z),0,7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ── CROSS (3D depth illusion via z-ordered particles) ────────────────────────
+function drawCross(closeup=0){
+  ctx.save();
+  for(const p of crossPts){
+    const persp=1/(1+(p.z||0)*.0018-closeup*.2);
+    let x=mix(p.x, W*.5+(p.x-W*.66)*2.5, closeup)*persp+(1-persp)*W/2;
+    let y=mix(p.y, H*.5+(p.y-H*.52)*2.1, closeup)*persp+(1-persp)*H/2;
+    const dep=clamp((p.z||0)/80+.5);
+    const r=stableNoise(p.seed,1);
+    const col=r>.68?'rgba(80,48,24,':'r>.38'?'rgba(60,36,16,':'rgba(50,28,12,';
+    ctx.fillStyle=`rgba(${r>.68?'80,48,24':r>.38?'60,36,16':'48,28,12'},${.32+.6*persp})`;
+    ctx.beginPath(); ctx.arc(x,y,mix(1.2,2.6,closeup),0,7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ── NAIL (elongated black particle cluster) ──────────────────────────────────
+function drawNail(prog){
+  const cx=mix(W*.55,W*.52,prog), cy=mix(H*.52,H*.48,prog);
+  const len=Math.min(W,H)*.35;
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(-.18);
+  for(let i=0;i<560;i++){
+    const u=stableNoise(i,50);
+    const x=(u-.5)*len;
+    const y=(stableNoise(i,51)-.5)*(12+38*(1-u));
+    const taper=u>.82?1-u:0;
+    ctx.fillStyle=`rgba(6,6,8,${.3+.65*u*(1-taper)})`;
+    ctx.beginPath(); ctx.arc(x+stableNoise(i,52)*3-1.5,y,stableNoise(i,53)*1.8+.6,0,7); ctx.fill();
+  }
+  // highlight shimmer
+  ctx.globalAlpha=.06;
+  ctx.fillStyle='rgba(255,255,255,1)';
+  ctx.fillRect(-len*.45,-2,len*.65,3.5);
+  ctx.restore();
+}
+
+// ── PROTOTYPE MODULE: HAND + NAIL ───────────────────────────────────────────────────
+function drawHandNail(prog){
+  ctx.fillStyle='#020202'; ctx.fillRect(0,0,W,H);
+  ctx.save(); ctx.translate(W*.52,H*.5); ctx.rotate(-.05);
+  const hr=Math.min(W,H);
+  // palm silhouette (particle-based)
+  for(let i=0;i<900;i++){
+    const a=stableNoise(i,60)*Math.PI*2, rr=Math.sqrt(stableNoise(i,61));
+    const x=Math.cos(a)*hr*.19*rr, y=Math.sin(a)*hr*.09*rr;
+    ctx.fillStyle=`rgba(238,218,200,${.16+.56*(1-rr*.32)})`;
+    ctx.beginPath(); ctx.arc(x,y,stableNoise(i,62)*2.2+.6,0,7); ctx.fill();
+  }
+  // nail through palm
+  for(let i=0;i<640;i++){
+    const u=stableNoise(i,63);
+    const x=(stableNoise(i,64)-.5)*32*(1-u*.55);
+    const y=mix(-86,92,u);
+    ctx.fillStyle=`rgba(7,7,8,${.32+.6*u})`;
+    ctx.beginPath(); ctx.arc(x,y,stableNoise(i,65)*2+.6,0,7); ctx.fill();
+  }
+  ctx.restore();
+  // impact flash
+  if(prog<.25){
+    ctx.fillStyle=`rgba(255,255,255,${.3*(1-prog*4)})`;
+    ctx.fillRect(0,0,W,H);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROTOTYPE VISUAL MODULES
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── PROTOTYPE: SUNSET HILL ─────────────────────────────────────────────────────
+// Warm dusk sky, silhouette hills made of particles, sphere floats up into view
+function drawPrototypeSunsetHill(prog){
+  const now=performance.now();
+  const p=ease(prog);
+
+  // Sky gradient – deep purple top → amber horizon → warm brown ground
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#2a1535');
+  sky.addColorStop(.38,'#c46a28');
+  sky.addColorStop(.62,'#a85520');
+  sky.addColorStop(1,'#4a2810');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // Far hill — particle layer 1 (lighter, behind)
+  const hill1Y=H*.68;
+  for(let i=0;i<1200;i++){
+    const nx=stableNoise(i,70);
+    const x=nx*W;
+    const wave=Math.sin(nx*Math.PI*3.2)*H*.07+Math.sin(nx*Math.PI*7.1)*H*.025;
+    const y=hill1Y+wave+stableNoise(i,71)*22;
+    if(y<hill1Y-H*.08) continue;
+    ctx.fillStyle=`rgba(90,52,22,${.28+stableNoise(i,72)*.38})`;
+    ctx.beginPath(); ctx.arc(x,y,1.6+stableNoise(i,73)*3.2,0,7); ctx.fill();
+  }
+
+  // Near hill — particle layer 2 (darker, front)
+  const hill2Y=H*.74;
+  for(let i=0;i<1600;i++){
+    const nx=stableNoise(i,74);
+    const x=nx*W;
+    const wave=Math.sin(nx*Math.PI*2.6)*H*.06+Math.sin(nx*Math.PI*5.8+1)*H*.022;
+    const y=hill2Y+wave+stableNoise(i,75)*18;
+    if(y<hill2Y-H*.07) continue;
+    ctx.fillStyle=`rgba(52,28,10,${.38+stableNoise(i,76)*.42})`;
+    ctx.beginPath(); ctx.arc(x,y,1.8+stableNoise(i,77)*3.6,0,7); ctx.fill();
+  }
+
+  // Sphere rises from below hills into frame
+  const sphereY=mix(H+80, H*.38, p);
+  // Some black corruption remains from chapter 5
+  drawSphere({x:W*.5,y:sphereY,r:Math.min(W,H)*.155,color:'#1a1a1a',speed:.6,alpha:.9,darkPct:.35});
+
+  // Warm atmospheric haze at horizon
+  const haze=ctx.createLinearGradient(0,H*.52,0,H*.78);
+  haze.addColorStop(0,'rgba(200,100,30,.0)');
+  haze.addColorStop(.5,'rgba(200,100,30,.06)');
+  haze.addColorStop(1,'rgba(200,100,30,.0)');
+  ctx.fillStyle=haze; ctx.fillRect(0,H*.52,W,H*.26);
+}
+
+// ── PROTOTYPE: CROSS APPEARS ───────────────────────────────────────────────────
+// Camera moves forward: hill particles rush toward viewer, cross materialises
+function drawPrototypeCrossApproach(prog){
+  const now=performance.now();
+  const p=ease(prog);
+
+  // Same sunset sky
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#1e1028'); sky.addColorStop(.4,'#a85522'); sky.addColorStop(.65,'#8a4218'); sky.addColorStop(1,'#3c2008');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // Hill particles "rushing" toward viewer as camera moves forward
+  for(let i=0;i<1800;i++){
+    const nx=stableNoise(i,80);
+    const baseY=H*.72+Math.sin(nx*Math.PI*2.8)*H*.06;
+    const rushScale=1+p*2.8;
+    const x=W/2+(nx*W-W/2)*rushScale;
+    const y=H*.5+(baseY-H*.5)*rushScale+stableNoise(i,81)*14;
+    if(y<H*.52||y>H*1.05) continue;
+    ctx.fillStyle=`rgba(42,22,8,${.32+stableNoise(i,82)*.4})`;
+    ctx.beginPath(); ctx.arc(x,y,1.4+stableNoise(i,83)*2.8*(1+p*.5),0,7); ctx.fill();
+  }
+
+  // Dust motes drifting
+  ctx.save(); ctx.globalAlpha=.45;
+  for(const d of dust){
+    d.y+=d.v*.7; d.x+=Math.sin(now*.0009+d.z)*1.6;
+    if(d.y>H) d.y=H*.4;
+    ctx.fillStyle=`rgba(160,100,50,${.12+d.z*.28})`;
+    ctx.beginPath(); ctx.arc(d.x,d.y,d.r*(1+d.z*.5),0,7); ctx.fill();
+  }
+  ctx.restore();
+
+  // Cross materialises from particles converging
+  const crossAlpha=clamp(p*1.6);
+  ctx.save(); ctx.globalAlpha=crossAlpha;
+  drawCross(clamp(p*.55));
+  ctx.restore();
+
+  // Sphere — small, dark, to the left of the cross
+  drawSphere({x:W*.28,y:H*.55,r:Math.min(W,H)*.09,color:'#141414',speed:.7,alpha:.88});
+}
+
+// ── PROTOTYPE: NAIL FORMS ───────────────────────────────────────────────────────
+// Dark sphere particles detach and elongate into a nail shape
+function drawPrototypeNailForms(prog){
+  const now=performance.now();
+  const p=ease(prog);
+
+  // Same sunset
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#18091e'); sky.addColorStop(.42,'#8a4018'); sky.addColorStop(.68,'#6e3012'); sky.addColorStop(1,'#2e1806');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // Cross in background, partially zoomed
+  drawCross(.38+p*.22);
+
+  // Sphere fades as its black particles leave
+  drawSphere({x:W*.3,y:H*.52,r:Math.min(W,H)*.09,color:'#111',speed:.5,alpha:clamp(1-p*1.2)});
+
+  // Black particles stream out of sphere region and assemble into nail
+  const nailCx=W*.56, nailCy=H*.5;
+  const nailLen=Math.min(W,H)*.36;
+  ctx.save();
+  for(let i=0;i<680;i++){
+    const t=stableNoise(i,90); // position along nail 0..1
+    // start: scattered around sphere origin
+    const sx=W*.3+(stableNoise(i,91)-.5)*Math.min(W,H)*.18;
+    const sy=H*.52+(stableNoise(i,92)-.5)*Math.min(W,H)*.18;
+    // end: tightly packed nail
+    const angle=-.18;
+    const ex=nailCx+Math.cos(angle)*(t-.5)*nailLen + Math.sin(angle)*(stableNoise(i,93)-.5)*(8+28*(1-t));
+    const ey=nailCy+Math.sin(angle)*(t-.5)*nailLen + Math.cos(angle)*(stableNoise(i,94)-.5)*(8+28*(1-t));
+    const px=mix(sx,ex,ease(p));
+    const py=mix(sy,ey,ease(p));
+    ctx.fillStyle=`rgba(6,6,8,${.28+.62*t})`;
+    ctx.beginPath(); ctx.arc(px,py,stableNoise(i,95)*1.8+.6,0,7); ctx.fill();
+  }
+  // Nail highlight
+  ctx.globalAlpha=.07*p;
+  ctx.fillStyle='rgba(255,255,255,1)';
+  ctx.save(); ctx.translate(nailCx,nailCy); ctx.rotate(-.18);
+  ctx.fillRect(-nailLen*.44,-1.5,nailLen*.62,3);
+  ctx.restore(); ctx.restore();
+}
+
+// ── PROTOTYPE: CROSS CLOSE-UP ───────────────────────────────────────────────────
+// Camera pushes right into the cross arm surface, showing wood grain depth
+function drawPrototypeCrossCloseup(prog){
+  const now=performance.now();
+  const p=ease(prog);
+
+  // BG dims toward black as we push in
+  const bgAlpha=mix(.55,.92,p);
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#12071a'); sky.addColorStop(.5,'#5a2810'); sky.addColorStop(1,'#200e04');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=`rgba(0,0,0,${bgAlpha*.6})`; ctx.fillRect(0,0,W,H);
+
+  // Cross zoomed — closeup value ramps from .85 → 1.2 (exceeding the normal 0-1 gives bigger zoom)
+  const close=mix(.85,1.15,p);
+  // Manually draw zoomed cross with expanded perspective
+  ctx.save();
+  for(const q of crossPts){
+    const persp=1/(1+(q.z||0)*.0012-close*.22);
+    // Zoom pivot = center of cross arm (approximately W*.66, H*.38)
+    const pivX=W*.66, pivY=H*.38;
+    const zoomS=mix(1,2.8,p);
+    let x=(mix(q.x,W*.5+(q.x-W*.66)*2.4,close)-pivX)*zoomS*persp+pivX;
+    let y=(mix(q.y,H*.5+(q.y-H*.52)*2.0,close)-pivY)*zoomS*persp+pivY;
+    const k=stableNoise(q.seed,1);
+    ctx.fillStyle=`rgba(${k>.68?'78,46,20':k>.38?'58,34,14':'46,26,10'},${.3+.62*persp})`;
+    ctx.beginPath(); ctx.arc(x,y,mix(1.2,3.2,p),0,7); ctx.fill();
+  }
+  ctx.restore();
+
+  // Nail visible on the arm
+  ctx.save(); ctx.globalAlpha=clamp(p*1.4);
+  const nCx=W*.52, nCy=H*.5;
+  const nLen=Math.min(W,H)*.32;
+  ctx.translate(nCx,nCy); ctx.rotate(-.14);
+  for(let i=0;i<520;i++){
+    const t=stableNoise(i,96);
+    const x=(t-.5)*nLen;
+    const y=(stableNoise(i,97)-.5)*(10+32*(1-t));
+    ctx.fillStyle=`rgba(5,5,7,${.32+.6*t})`;
+    ctx.beginPath(); ctx.arc(x,y,stableNoise(i,98)*1.7+.5,0,7); ctx.fill();
+  }
+  ctx.restore();
+
+  // Tension vignette
+  const vig=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.2,W/2,H/2,Math.max(W,H)*.72);
+  vig.addColorStop(0,'rgba(0,0,0,0)'); vig.addColorStop(1,`rgba(0,0,0,${.5*p})`);
+  ctx.fillStyle=vig; ctx.fillRect(0,0,W,H);
+}
+
+// ── PROTOTYPE: NAILING ────────────────────────────────────────────────────────
+// Particle hand, particle nail descends, impact shake + blackout
+function drawPrototypeNailing(prog){
+  const now=performance.now();
+  const p=ease(prog);
+
+  // Black BG
+  ctx.fillStyle='#020202'; ctx.fillRect(0,0,W,H);
+
+  // Palm — particle ellipse, warm skin tone
+  ctx.save(); ctx.translate(W*.5,H*.54); ctx.rotate(-.06);
+  for(let i=0;i<1100;i++){
+    const a=stableNoise(i,100)*Math.PI*2, rr=Math.sqrt(stableNoise(i,101));
+    const r=Math.min(W,H);
+    const x=Math.cos(a)*r*.22*rr, y=Math.sin(a)*r*.11*rr;
+    ctx.fillStyle=`rgba(235,215,196,${.14+.56*(1-rr*.28)})`;
+    ctx.beginPath(); ctx.arc(x,y,stableNoise(i,102)*2.4+.5,0,7); ctx.fill();
+  }
+  // Palm centre shadow
+  const palmShadow=ctx.createRadialGradient(0,0,0,0,0,Math.min(W,H)*.1);
+  palmShadow.addColorStop(0,'rgba(0,0,0,.45)'); palmShadow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=palmShadow; ctx.beginPath(); ctx.arc(0,0,Math.min(W,H)*.18,0,7); ctx.fill();
+  ctx.restore();
+
+  // Nail descends and drives in
+  const nailProgress=clamp(p*1.8); // faster than chapter progress
+  const nCx=W*.5, nBaseY=H*.26;
+  const nLen=Math.min(W,H)*.38;
+  // Nail travels down and partially embeds
+  const nailY=mix(H*.08, H*.46, ease(nailProgress));
+  ctx.save(); ctx.translate(nCx,nailY); ctx.rotate(-.05);
+  for(let i=0;i<640;i++){
+    const t=stableNoise(i,103);
+    const x=(stableNoise(i,104)-.5)*(10+30*(1-t));
+    const y=mix(-nLen*.48,nLen*.48,t);
+    ctx.fillStyle=`rgba(6,6,8,${.3+.65*t})`;
+    ctx.beginPath(); ctx.arc(x,y,stableNoise(i,105)*2+.5,0,7); ctx.fill();
+  }
+  ctx.globalAlpha=.07;
+  ctx.fillStyle='rgba(255,255,255,1)';
+  ctx.fillRect(-3,-nLen*.44,5,nLen*.68);
+  ctx.restore();
+
+  // Impact flash when nail hits — screen shake implied by vignette pulse
+  if(nailProgress>.82){
+    const impPulse=Math.sin((nailProgress-.82)/.18*Math.PI);
+    ctx.fillStyle=`rgba(255,255,255,${.22*impPulse})`;
+    ctx.fillRect(0,0,W,H);
+    // Radial impact burst
+    ctx.save(); ctx.translate(W*.5,H*.5);
+    for(let i=0;i<200;i++){
+      const a=stableNoise(i,106)*Math.PI*2;
+      const dist=stableNoise(i,107)*Math.min(W,H)*.25*impPulse;
+      ctx.fillStyle=`rgba(255,255,255,${.18*impPulse*stableNoise(i,108)})`;
+      ctx.beginPath(); ctx.arc(Math.cos(a)*dist,Math.sin(a)*dist,1.5,0,7); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Initial flash
+  if(p<.18){
+    ctx.fillStyle=`rgba(255,255,255,${.32*(1-p/.18)})`;
+    ctx.fillRect(0,0,W,H);
+  }
+}
+
+// ── PROTOTYPE: BLOOD DROPLET TO RED SPHERE ─────────────────────────────────────
+// Droplet falls, wind particles rush UP past it (cinematic slow-motion feel)
+function drawPrototypeBloodDroplet(prog){
+  const now=performance.now();
+  const p=ease(prog);
+
+  // Black BG
+  ctx.fillStyle='#030204'; ctx.fillRect(0,0,W,H);
+
+  // Wind particles streaming UPWARD (strong, visible)
+  ctx.save();
+  for(const w of wind){
+    w.y-=w.v*1.6;
+    if(w.y<-30){w.y=H+30; w.x=rnd(W)}
+    const brightness=Math.sin(now*.001+w.x*.003)*.5+.5;
+    ctx.fillStyle=`rgba(${Math.round(mix(180,230,brightness))},${Math.round(mix(190,235,brightness))},${Math.round(mix(210,250,brightness))},${w.a*.9})`;
+    ctx.beginPath(); ctx.arc(w.x,w.y,w.r,0,7); ctx.fill();
+  }
+  ctx.restore();
+
+  // Droplet descends slowly
+  const dropletY=mix(H*.12,H*.52,p);
+  const dropletScale=mix(.28,1.05,p);
+
+  // Red atmospheric glow around droplet
+  const glowR=Math.min(W,H)*(.18+.28*p);
+  const grd=ctx.createRadialGradient(W/2,dropletY,0,W/2,dropletY,glowR);
+  grd.addColorStop(0,'rgba(180,15,30,.38)');
+  grd.addColorStop(.45,'rgba(140,8,20,.14)');
+  grd.addColorStop(1,'rgba(100,5,15,0)');
+  ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(W/2,dropletY,glowR,0,7); ctx.fill();
+
+  // Teardrop-shaped particle cluster
+  ctx.save(); ctx.translate(W/2,dropletY); ctx.scale(dropletScale,dropletScale);
+  for(let i=0;i<520;i++){
+    const a=i*2.399963+Math.sin(i)*.02;
+    const rr=Math.sqrt(i/520);
+    let px=Math.cos(a)*rr*34;
+    let py=Math.sin(a)*rr*40+8;
+    const tap=clamp((py+40)/90);
+    px*=mix(.28,1,Math.sin(tap*Math.PI));
+    py-=Math.pow(1-rr,1.9)*44;
+    const tw=Math.sin(now*.003+i)*1.4;
+    // Colour layers: bright crimson core → deep red edge
+    const cr=Math.round(mix(220,120,rr));
+    const cg=Math.round(mix(20,5,rr));
+    const cb=Math.round(mix(35,15,rr));
+    ctx.fillStyle=`rgba(${cr},${cg},${cb},${.26+.6*(1-rr*.42)})`;
+    ctx.beginPath(); ctx.arc(px+tw,py,1.1+1.9*(1-rr),0,7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ── PROTOTYPE: WAITING FLOOR ───────────────────────────────────────────────────
+// Camera arrives first. Mirror floor, horizon line, sphere NOT yet visible.
+function drawPrototypeWaitingFloor(prog){
+  const now=performance.now();
+  const p=ease(prog);
+
+  // Deep black space
+  ctx.fillStyle='#020203'; ctx.fillRect(0,0,W,H);
+
+  // Horizon line
+  const baseHorizonY=H*.55;
+  const horizonDrop=ease(clamp((p-.78)/.22));
+  const horizY=mix(baseHorizonY,H+R*.12,horizonDrop);
+  const horizonFade=1-horizonDrop;
+  ctx.strokeStyle=`rgba(255,255,255,${.4+Math.sin(now*.0012)*.08})`; ctx.lineWidth=.8;
+  ctx.beginPath(); ctx.moveTo(0,horizY); ctx.lineTo(W,horizY); ctx.stroke();
+
+  // Mirror floor gradient (below horizon)
+  const floorGrd=ctx.createLinearGradient(0,horizY,0,H);
+  floorGrd.addColorStop(0,'rgba(255,255,255,.09)');
+  floorGrd.addColorStop(.3,'rgba(255,255,255,.03)');
+  floorGrd.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=floorGrd; ctx.fillRect(0,horizY,W,H-horizY);
+
+  // Glossy floor reflection lines (perspective lines converging to horizon)
+  ctx.save(); ctx.globalAlpha=.1;
+  for(let i=0;i<12;i++){
+    const x=W/2+(i-5.5)*W*.08;
+    ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=.6;
+    ctx.beginPath(); ctx.moveTo(x,horizY); ctx.lineTo(W/2+(x-W/2)*8,H); ctx.stroke();
+  }
+  ctx.restore();
+
+  // Faint red glow appearing at the top — hinting the droplet is coming
+  const hint=clamp(p*1.8-.2);
+  if(hint>0){
+    const hg=ctx.createRadialGradient(W/2,-20,0,W/2,-20,H*.45);
+    hg.addColorStop(0,`rgba(160,10,25,${.22*hint})`);
+    hg.addColorStop(1,'rgba(160,10,25,0)');
+    ctx.fillStyle=hg; ctx.fillRect(0,0,W,H*.5);
+  }
+
+  // Pulse effect — subtle brightness ripple on floor
+  const pulse=Math.sin(now*.0014)*.5+.5;
+  ctx.fillStyle=`rgba(255,255,255,${.025*pulse})`;
+  ctx.fillRect(0,horizY,W,H-horizY);
+}
+
+// ── WIND (upward streaming particles, used in sc11) ───────────────────────────
+// (wind array is already defined in makeWorld)
+
+// ── SOIL + GRASS BLOCK (Minecraft-style, all particles) ──────────────────────
+function drawParticleBlock(topY){
+  const left=W*.1, right=W*.9, width=right-left, blockH=H-topY;
+  ctx.save();
+  // Grass top — 7 rows of particles
+  const cols=Math.max(52,Math.floor(width/16));
+  const topRows=8;
+  for(let r=0;r<topRows;r++){
+    for(let c=0;c<cols;c++){
+      const i=r*cols+c;
+      const nx=(c+.5+stableNoise(i,1)*.42)/cols;
+      const x=left+nx*width;
+      const y=topY-38+r*5+stableNoise(i,2)*3;
+      const hue=stableNoise(i,3)>.48?'92,172,55':'68,140,43';
+      ctx.fillStyle=`rgba(${hue},${.58+stableNoise(i,4)*.3})`;
+      ctx.beginPath(); ctx.arc(x,y,2+stableNoise(i,5)*2.2,0,7); ctx.fill();
+    }
+  }
+  // Grass fringe
+  for(let i=0;i<260;i++){
+    const x=left+stableNoise(i,8)*width;
+    const y=topY-4+stableNoise(i,9)*16;
+    ctx.fillStyle=`rgba(68,136,44,${.24+stableNoise(i,10)*.4})`;
+    ctx.beginPath(); ctx.arc(x,y,1.2+stableNoise(i,11)*2.4,0,7); ctx.fill();
+  }
+  // Dirt — rows
+  const rows=Math.max(18,Math.floor(blockH/16));
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const i=12000+r*cols+c;
+      const x=left+(c+.5+stableNoise(i,1)*.5)/cols*width;
+      const y=topY+8+(r+.4+stableNoise(i,2)*.5)/rows*(H-topY-8);
+      const k=stableNoise(i,3);
+      const col=k>.72?'92,62,34':k>.38?'116,76,40':'68,44,26';
+      ctx.fillStyle=`rgba(${col},${.4+stableNoise(i,4)*.4})`;
+      ctx.beginPath(); ctx.arc(x,y,2+stableNoise(i,5)*2.8,0,7); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+// ── CHAPTER 7: SEED PLANTING ───────────────────────────────────────────────────
+function drawChapter7Seed(prog){
+  const p=ease(prog);
+  const R=Math.min(W,H);
+  const hillQ=ease(clamp((p-.52)/.48));
+  const starLift=ease(clamp(p/.38));
+  const topY=mix(H*1.08,H*.92,hillQ);
+
+  ctx.fillStyle='#020203'; ctx.fillRect(0,0,W,H);
+  drawStarsRising(1-starLift,starLift*.75);
+
+  const greenAura=ease(clamp((p-.42)/.42));
+  if(greenAura>0){
+    const aura=ctx.createRadialGradient(W/2,H*.5,R*.10,W/2,H*.5,R*.52);
+    aura.addColorStop(0,`rgba(235,255,228,${.18*greenAura})`);
+    aura.addColorStop(.28,`rgba(114,220,118,${.12*greenAura})`);
+    aura.addColorStop(.7,`rgba(48,116,62,${.05*greenAura})`);
+    aura.addColorStop(1,'rgba(48,116,62,0)');
+    ctx.fillStyle=aura;ctx.fillRect(0,0,W,H);
+  }
+
+  drawSphere({x:W/2, y:H*.5, r:R*.19, color:'#f8fbff', speed:.55, alpha:1});
+
+  drawBareSoilHill(topY,hillQ,false,0);
+}
+// ── CHAPTER 8: SPROUT GROWTH ───────────────────────────────────────────────────
+function drawChapter8Sprout(prog){
+  const p=ease(prog);
+  const greenQ=ease(clamp(p/.68));
+  const growQ=ease(clamp((p-.62)/.38));
+  const r=Math.min(W,H)*.19;
+  const topY=H*.92;
+
+  if(growQ>.98 && chapter8TerrainCache){
+    ctx.drawImage(chapter8TerrainCache,0,0,W,H);
+    drawSphere({x:W/2, y:H*.5, r, color:'#f8fbff', greenPct:greenQ, speed:.25, alpha:.96});
+    drawTopStars(ease(clamp((growQ-.98)/.02)));
+  } else if(growQ>.98){
+    ctx.fillStyle='#020203'; ctx.fillRect(0,0,W,H);
+    const aura=ctx.createRadialGradient(W/2,H*.78,0,W/2,H*.78,Math.min(W,H)*.72);
+    aura.addColorStop(0,`rgba(92,190,88,${.16+.08*growQ})`);
+    aura.addColorStop(.42,`rgba(48,116,62,${.07+.04*growQ})`);
+    aura.addColorStop(1,'rgba(48,116,62,0)');
+    ctx.fillStyle=aura;ctx.fillRect(0,0,W,H);
+    drawBareSoilHill(topY,1,true,1);
+    drawGrassCover(topY,1,W/2);
+    drawParticleGrowth(topY,1,W/2,H*.5,r);
+    chapter8TerrainCache=document.createElement('canvas');
+    chapter8TerrainCache.width=Math.max(1,Math.ceil(W));
+    chapter8TerrainCache.height=Math.max(1,Math.ceil(H));
+    chapter8TerrainCache.getContext('2d').drawImage(canvas,0,0,W,H);
+    drawSphere({x:W/2, y:H*.5, r, color:'#f8fbff', greenPct:greenQ, speed:.25, alpha:.96});
+    drawTopStars(ease(clamp((growQ-.98)/.02)));
+  } else {
+    ctx.fillStyle='#020203'; ctx.fillRect(0,0,W,H);
+    const aura=ctx.createRadialGradient(W/2,H*.78,0,W/2,H*.78,Math.min(W,H)*.72);
+    aura.addColorStop(0,`rgba(92,190,88,${.16+.08*growQ})`);
+    aura.addColorStop(.42,`rgba(48,116,62,${.07+.04*growQ})`);
+    aura.addColorStop(1,'rgba(48,116,62,0)');
+    ctx.fillStyle=aura;ctx.fillRect(0,0,W,H);
+    drawSphere({x:W/2, y:H*.5, r, color:'#f8fbff', greenPct:greenQ, speed:.25, alpha:.96});
+    drawBareSoilHill(topY,1,true,growQ);
+    drawGrassCover(topY,growQ,W/2);
+    drawParticleGrowth(topY,growQ,W/2,H*.5,r);
+  }
+}
+function drawBareSoilHill(topY, rise=1, withGrass=false, grow=0){
+  const left=W*.05, right=W*.95, width=right-left;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(0,H);
+  ctx.lineTo(0,topY+H*.08);
+  for(let i=0;i<=96;i++){
+    const t=i/96;
+    const x=mix(0,W,t);
+    const mound=Math.sin(t*Math.PI)*H*.13;
+    const y=topY-mound*rise+(stableNoise(i,71)-.5)*H*.016*rise;
+    ctx.lineTo(x,y);
+  }
+  ctx.lineTo(W,H);
+  ctx.closePath();
+  ctx.clip();
+
+  const soil=ctx.createLinearGradient(0,topY-H*.1,0,H);
+  soil.addColorStop(0,'#8a5a2e'); soil.addColorStop(.48,'#5d3a20'); soil.addColorStop(1,'#2f2118');
+  ctx.fillStyle=soil; ctx.fillRect(0,topY-H*.14,W,H);
+
+  const cols=Math.max(74,Math.floor(width/13));
+  const rows=Math.max(22,Math.floor((H-topY)/13));
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const i=31000+r*cols+c;
+      const x=left+(c+.5+stableNoise(i,1)*.5)/cols*width;
+      const ridge=topY-Math.sin((x/W)*Math.PI)*H*.13*rise;
+      const y=ridge+8+(r+.35+stableNoise(i,2)*.5)/rows*(H-ridge-8);
+      const k=stableNoise(i,3);
+      const col=k>.7?'122,78,38':k>.36?'91,57,30':'63,42,26';
+      ctx.fillStyle=`rgba(${col},${.35+stableNoise(i,4)*.42})`;
+      ctx.beginPath(); ctx.arc(x,y,1.6+stableNoise(i,5)*2.8,0,7); ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  if(withGrass){
+    ctx.save();
+    const a=clamp(grow*1.35);
+    for(let i=0;i<300*a;i++){
+      const t=stableNoise(i,81);
+      const x=mix(W*.06,W*.94,t);
+      const ridge=topY-Math.sin((x/W)*Math.PI)*H*.13;
+      const h=(6+stableNoise(i,82)*30)*a;
+      const sway=(stableNoise(i,83)-.5)*10;
+      const steps=3+Math.floor(stableNoise(i,87)*5);
+      for(let s=0;s<steps;s++){
+        const k=s/(steps-1||1);
+        const px=x+sway*k;
+        const py=ridge+4-h*k;
+        const gr=stableNoise(i*17+s,88);
+        ctx.fillStyle=`rgba(${Math.round(mix(64,128,gr))},${Math.round(mix(132,214,gr))},${Math.round(mix(48,90,gr))},${(.18+.58*a)*(1-k*.18)})`;
+        ctx.beginPath(); ctx.arc(px,py,.9+stableNoise(i*17+s,89)*2.1,0,7); ctx.fill();
       }
     }
+    ctx.restore();
+  }
+}
 
-    function showToast(message) {
-      const toast = $('toast');
-      toast.textContent = message;
-      toast.classList.add('show');
-      clearTimeout(showToast.timer);
-      showToast.timer = setTimeout(() => toast.classList.remove('show'), 2100);
+function drawGrassCover(topY,grow=0,originX=W/2){
+  const q=clamp(grow);
+  if(q<=0) return;
+  const left=W*.04, right=W*.96, width=right-left;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(0,H);
+  ctx.lineTo(0,topY+H*.08);
+  for(let i=0;i<=120;i++){
+    const t=i/120;
+    const x=mix(0,W,t);
+    const y=topY-Math.sin(t*Math.PI)*H*.13+(stableNoise(i,171)-.5)*H*.012;
+    ctx.lineTo(x,y);
+  }
+  ctx.lineTo(W,H);
+  ctx.closePath();
+  ctx.clip();
+
+  const cols=Math.max(40,Math.floor(width/22));
+  const rows=Math.max(10,Math.floor((H-topY)/24));
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const i=52000+r*cols+c;
+      const x=left+(c+.5+stableNoise(i,1)*.55)/cols*width;
+      const ridge=topY-Math.sin((x/W)*Math.PI)*H*.13;
+      const y=ridge+3+(r+.35+stableNoise(i,2)*.55)/rows*(H-ridge-3);
+      const fromCenter=clamp(Math.abs(x-originX)/(W*.52));
+      const vertical=clamp((y-ridge)/(H-ridge));
+      const wave=clamp(q*1.55-fromCenter*.78-vertical*.28+.2);
+      const local=ease(wave);
+      if(local<=0) continue;
+      const gr=stableNoise(i,3);
+      const deep=vertical>.55?.18:0;
+      const rr=Math.round(mix(42,106,gr)-deep*30);
+      const gg=Math.round(mix(118,214,gr)-deep*42);
+      const bb=Math.round(mix(44,82,gr)-deep*20);
+      ctx.fillStyle=`rgba(${rr},${gg},${bb},${(.28+.62*local)})`;
+      ctx.beginPath();ctx.arc(x,y,3.2+stableNoise(i,4)*4.2,0,7);ctx.fill();
+    }
+  }
+
+  const flowerColors=['#ff6b9a','#ef4444','#facc15'];
+  if(q>.58){
+    const bloom=ease(clamp((q-.58)/.42));
+    for(let i=0;i<42;i++){
+      const x=mix(W*.07,W*.93,stableNoise(i,181));
+      const ridge=topY-Math.sin((x/W)*Math.PI)*H*.13;
+      const fromCenter=clamp(Math.abs(x-originX)/(W*.52));
+      const wave=clamp(bloom*1.35-fromCenter*.72+.18);
+      if(wave<=0 || stableNoise(i,182)<.44) continue;
+      const y=ridge+H*.015+stableNoise(i,183)*H*.28;
+      const col=flowerColors[i%flowerColors.length];
+      ctx.fillStyle=col;
+      ctx.globalAlpha=.34+.48*ease(wave);
+      const petals=5+Math.floor(stableNoise(i,184)*5);
+      for(let p=0;p<petals;p++){
+        const a=stableNoise(i*17+p,185)*Math.PI*2;
+        const rr=Math.sqrt(stableNoise(i*17+p,186))*5.5*ease(wave);
+        ctx.beginPath();ctx.arc(x+Math.cos(a)*rr,y+Math.sin(a)*rr,.8+stableNoise(i*17+p,187)*1.4,0,7);ctx.fill();
+      }
+    }
+    ctx.globalAlpha=1;
+  }
+  ctx.restore();
+}
+
+function drawParticleGrowth(topY,grow,originX=W/2,originY=H*.40,originR=Math.min(W,H)*.14){
+  const q=clamp(grow);
+  ctx.save();
+  const flowerColors=['#ff6b9a','#ef4444','#facc15'];
+  for(let i=0;i<30;i++){
+    const x=mix(W*.08,W*.92,stableNoise(i,92));
+    const ridge=topY-Math.sin((x/W)*Math.PI)*H*.13;
+    const dist=Math.hypot((x-originX)/W,(ridge-originY)/H);
+    const wave=clamp((q*1.45-dist*1.9+.12));
+    const local=ease(wave);
+    if(local<=0) continue;
+    const h=(12+stableNoise(i,93)*52)*local;
+    const bend=(stableNoise(i,94)-.5)*18;
+
+    const steps=3+Math.floor(stableNoise(i,95)*5);
+    for(let s=0;s<steps;s++){
+      const t=s/(steps-1);
+      const px=x+bend*t*.45+Math.sin(t*Math.PI)*bend*.12;
+      const py=ridge-h*t;
+      const depth=.55+.45*(1-dist);
+      ctx.fillStyle=`rgba(78,196,86,${(.18+.64*t)*local*depth})`;
+      ctx.beginPath(); ctx.arc(px,py,.9+stableNoise(i*31+s,96)*2.0,0,7); ctx.fill();
     }
 
-    function escapeHtml(value) {
-      return String(value).replace(/[&<>"']/g, (char) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-      }[char]));
+    if(local>.68 && stableNoise(i,97)>.62){
+      const bloom=clamp((local-.68)/.32);
+      const fx=x+bend*.44;
+      const fy=ridge-h;
+      ctx.fillStyle=flowerColors[i%flowerColors.length];
+      const petalCount=8+Math.floor(stableNoise(i,101)*7);
+      for(let p=0;p<petalCount;p++){
+        const a=stableNoise(i*101+p,98)*Math.PI*2;
+        const rr=Math.sqrt(stableNoise(i*101+p,99))*4.6*bloom;
+        ctx.globalAlpha=(.36+.54*bloom)*(0.8+0.2*(1-dist));
+        ctx.beginPath(); ctx.arc(fx+Math.cos(a)*rr,fy+Math.sin(a)*rr,0.9+stableNoise(i*101+p,100)*1.55,0,7); ctx.fill();
+      }
+      ctx.globalAlpha=1;
+    }
+  }
+  ctx.restore();
+}
+function drawFallingRedTrail(cx,cy,r,fall){
+  ctx.save();
+  const q=clamp(fall);
+  const now=performance.now();
+  ctx.globalCompositeOperation='lighter';
+
+  // Continuous particle wisps: roots follow a deeper sphere arc, then animated
+  // particles are emitted upward from those roots.
+  const streams=32;
+  const maxHeight=r*mix(.9,2.08,q);
+  for(let s=0;s<streams;s++){
+    const side=mix(-.86,.86,s/(streams-1));
+    const centerWeight=1-Math.min(1,Math.abs(side)/.86);
+    const dx=side*r;
+    const surfaceY=cy-Math.sqrt(Math.max(0,r*r-dx*dx));
+    const originX=cx+dx;
+    const originY=surfaceY+r*mix(.18,.055,centerWeight)+r*.16;
+    const h=maxHeight*mix(.64,1.34,centerWeight)*(0.88+stableNoise(s,231)*.22);
+    const lean=(stableNoise(s,232)-.5)*r*mix(.3,.12,centerWeight);
+    const samples=14+Math.floor(18*mix(.55,1,centerWeight));
+    const phase=(now*.0016+stableNoise(s,233))*Math.PI*2;
+
+    for(let j=0;j<samples;j++){
+      const t=j/(samples-1);
+      const density=.62+.38*(t<.22 ? t/.22 : 1);
+      const wave=Math.sin(phase+t*5.6)*r*.018*(1+t*.72);
+      const jitter=(stableNoise(s*97+j,234)-.5)*r*.042*(1+t*.42);
+      const x=originX+lean*t+wave+jitter;
+      const y=originY-h*t+r*.035*Math.sin(t*Math.PI);
+      const fade=1-t*.72;
+      const hot=stableNoise(s*97+j,235);
+      const rr=Math.round(mix(165,240,hot));
+      const gg=Math.round(mix(7,30,hot));
+      const bb=Math.round(mix(13,34,hot));
+      const alpha=(.18+.56*fade)*q*(.78+.30*centerWeight)*density;
+      const size=(1.25+stableNoise(s*97+j,236)*2.55)*(1-t*.24)*(1+.06*centerWeight);
+      ctx.fillStyle=`rgba(${rr},${gg},${bb},${alpha})`;
+      ctx.beginPath();ctx.arc(x,y,size,0,7);ctx.fill();
     }
 
-    function escapeAttr(value) {
-      return escapeHtml(value);
+    const emitters=4+Math.floor(centerWeight*3);
+    for(let e=0;e<emitters;e++){
+      const life=(now*.00046+stableNoise(s*31+e,237))%1;
+      const rise=h*(life*.82+.03);
+      const sway=Math.sin(phase+life*6.8+e)*r*.05*(1+life*.7);
+      const x=originX+lean*life+sway+(stableNoise(s*47+e,238)-.5)*r*.045;
+      const y=originY-rise+r*.06*Math.sin(life*Math.PI);
+      const fade=Math.pow(1-life,.72);
+      const hot=stableNoise(s*47+e,239);
+      const rr=Math.round(mix(180,255,hot));
+      const gg=Math.round(mix(8,34,hot));
+      const bb=Math.round(mix(12,36,hot));
+      const alpha=(.3+.52*fade)*q*(.72+.28*centerWeight);
+      const size=(1.45+stableNoise(s*47+e,240)*2.8)*(1-life*.18);
+      ctx.fillStyle=`rgba(${rr},${gg},${bb},${alpha})`;
+      ctx.beginPath();ctx.arc(x,y,size,0,7);ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+// ─── Timeline helpers ─────────────────────────────────────────────────────────
+// t01(chapterN): returns 0..1 progress within chapter N's segment
+function t01(n){
+  const start=CK[n-1], end=CK[n];
+  return clamp((S.T-start)/(end-start));
+}
+// tAbs(chapterN): absolute T at start of chapter N
+function tStart(n){return CK[n-1];}
+function tEnd(n){return CK[n];}
+// Is T currently inside chapter N's window?
+function inChapter(n){return S.T>=CK[n-1] && S.T<=CK[n]+.001;}
+// Crossfade weight between two chapters — how far we are past the chapter boundary
+function xfade(fromN,toN,dur=0.6){
+  const boundary=CK[fromN];
+  return ease(clamp((S.T-boundary)/dur));
+}
+
+// ─── GOSPEL SPHERE GALLERY ───────────────────────────────────────────────────
+function drawGallery(prog){
+  const R=Math.min(W,H);
+  // Phase 1 (0→0.35): fade to black
+  const blackAlpha=clamp(prog/0.35);
+  ctx.save();ctx.globalAlpha=blackAlpha;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);ctx.restore();
+  const showProg=clamp((prog-.35)/.65);
+  if(showProg<=0)return;
+  const specs=[
+    {color:'#f7c85f',hr:[247,200,95], ha:.55,goldBoost:true},
+    {color:'#0a0a0a',hr:[248,251,255],ha:.28},
+    {color:'#bf1830',hr:[191,24,48],  ha:.55},
+    {color:'#f8fbff',hr:[248,251,255],ha:.30},
+    {color:'#4fd46f',hr:[79,212,111], ha:.55},
+  ];
+  const sr=R*.09;
+  for(let i=0;i<specs.length;i++){
+    const s=specs[i];
+    const a=clamp((showProg-i*.14)/.22);
+    if(a<=0)continue;
+    const cx=W*(i+1)/6, cy=H*.5;
+    ctx.save();ctx.globalAlpha=a;
+    const gr=ctx.createRadialGradient(cx,cy,0,cx,cy,sr*2.8);
+    gr.addColorStop(0,`rgba(${s.hr[0]},${s.hr[1]},${s.hr[2]},${s.ha})`);
+    gr.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=gr;ctx.beginPath();ctx.arc(cx,cy,sr*2.8,0,7);ctx.fill();
+    drawSphere({x:cx,y:cy,r:sr,color:s.color,goldBoost:!!s.goldBoost,speed:.35,alpha:1,noFloat:true});
+    ctx.restore();
+  }
+}
+
+// ─── MAIN RENDER LOOP ────────────────────────────────────────────────────────
+function render(){
+  requestAnimationFrame(render);
+  const now=performance.now();
+  const dt=Math.min((now-S.lastRealTime)/1000, .05); // cap at 50ms
+  S.lastRealTime=now;
+
+  // Advance T toward Tgt
+  const dist=S.Tgt-S.T;
+  if(Math.abs(dist)>.001){
+    // 재생 속도: 기본 0.5배속, 멀수록 최대 1.6배속
+    const speed=clamp(0.5+Math.abs(dist)*0.28,0.5,1.6);
+    S.T+=Math.sign(dist)*Math.min(Math.abs(dist),dt*speed);
+  } else {
+    S.T=S.Tgt; // snap when close
+  }
+
+  ctx.clearRect(0,0,W,H);
+
+  // 렘니스케이트(가로 8자) 오프셋 계산 — 매 프레임 갱신
+  const _lt=performance.now()*.00038; // ~16.5초 주기
+  const _ld=1+Math.sin(_lt)*Math.sin(_lt);
+  S.lemOff={bx:Math.cos(_lt)/_ld, by:Math.sin(_lt)*Math.cos(_lt)/_ld*.45};
+
+  const T=S.T;
+
+  // ── Helper: draw the universal background for a given T ──────────────────
+  // Each segment blends naturally into the next
+
+  // ── SEGMENT 1: Black cosmos (T 0..4) ────────────────────────────────────
+  if(T<=CK[1]){
+    const p=t01(1);
+    ctx.fillStyle='#030407'; ctx.fillRect(0,0,W,H);
+    drawStars(.55+.18*Math.sin(now*.0004));
+    drawSphere({speed:.7,color:'#f8fbff'});
+  }
+
+  // ── SEGMENT 2: Spin → Blast (T CK[1]..CK[2]) ────────────────────────────
+  else if(T<=CK[2]){
+    const p=t01(2);
+    ctx.fillStyle='#030407'; ctx.fillRect(0,0,W,H);
+    drawStars(clamp(1-p*1.4));
+    if(p<.72){
+      // 초반엔 느리게, 0.72 직전에 폭발적으로 빨라짐
+      const spinP=p/.72;
+      const speed=mix(0.6, 22, ease3(spinP)); // ease3 = quintic, 끝에 집중
+      drawSphere({speed, color:'#f8fbff'});
+    } else {
+      // Blast 0.72→1.0
+      const blast=ease((p-.72)/.28);
+      drawSphere({speed:24,color:'#f8fbff',alpha:clamp(1-blast*.6),blast});
+    }
+  }
+
+  // ── SEGMENT 3: Converge → Gold → White void (T CK[2]..CK[3]) ───────────
+  // p 0.00–0.20 : 퍼진 입자들이 다시 모여 금색 스피어로 수렴
+  // p 0.20–1.00 : 흰 배경 fade-in, 금색 스피어가 중앙에 안착
+  else if(T<=CK[3]){
+    const p=t01(3);
+    const R=Math.min(W,H);
+    const gatherEnd=1.2/CK_DUR[3];
+    const holdEnd=gatherEnd+(1.6/CK_DUR[3]);
+    const expandEnd=holdEnd+(1.1/CK_DUR[3]);
+    if(p<expandEnd){
+      // 흩어진 입자가 작은 스피어로 모인 뒤, 천천히 금색 스피어로 안정화
+      ctx.fillStyle='#030407'; ctx.fillRect(0,0,W,H);
+      const expandQ=clamp((p-holdEnd)/(expandEnd-holdEnd));
+      const gatherQ=p<gatherEnd ? clamp(p/gatherEnd) : 1;
+      const q=ease(expandQ);
+      drawStars(clamp((1-ease(Math.max(gatherQ,q)))*.6));
+      drawSphere({speed:mix(10,1.2,q),pointGather:gatherQ,pointExpand:expandQ,
+        color:'#f7c85f',goldBoost:true,r:R*.24,alpha:.58+.42*q});
+    } else {
+      // 흰 무한 공간 fade-in → 장면 4 시작색 #f7fbff(247,251,255)에 맞춤
+      const q=ease((p-expandEnd)/(1-expandEnd));
+      ctx.fillStyle=`rgb(${Math.round(mix(3,247,q))},${Math.round(mix(3,251,q))},${Math.round(mix(7,255,q))})`;
+      ctx.fillRect(0,0,W,H);
+      drawSphere({speed:1.1,color:'#f7c85f',goldBoost:true,r:R*.24,alpha:1});
+    }
+  }
+
+  // ── SEGMENT 4: 추락 (T CK[3]..CK[4]) ────────────────────────────────────
+  // Chapter 3 흰 공간에서 바로 이어짐
+  // p 0.00–0.20 : 흰 배경 균열 → 검은 배경 (금색 스피어 중앙)
+  // p 0.20–1.00 : 검은 골목 + 비 + 스피어 금→검 변화
+  else if(T<=CK[4]){
+    const p=t01(4);
+    const R=Math.min(W,H);
+
+    if(p<.085){
+      // 흰 세계 균열 — 1.1초 지속
+      const stage=clamp(p/.085);
+      const crackEnd=1-(0.6/(CK_DUR[4]*.085));
+      const holdEnd=crackEnd+(0.3/(CK_DUR[4]*.085));
+      const crackQ=clamp(stage/crackEnd);
+      const shakeQ=clamp((stage-holdEnd)/(1-holdEnd));
+      const shakeAmp=Math.sin(shakeQ*Math.PI);
+      const shakeFrame=Math.floor(performance.now()/26);
+      const dx=(stableNoise(shakeFrame,901)-.5)*32*shakeAmp;
+      const dy=(stableNoise(shakeFrame,1203)-.5)*24*shakeAmp;
+      ctx.save();
+      ctx.translate(dx,dy);
+      ctx.fillStyle='#f7fbff'; ctx.fillRect(-40,-40,W+80,H+80);
+      drawShatter(crackQ);
+      drawSphere({x:W/2,y:H*.5,r:R*.24,color:'#f7c85f',goldBoost:crackQ<.4,speed:.8,alpha:1});
+      ctx.restore();
+
+    } else {
+      // 검은 골목 + 비 + 스피어 금→검
+      const q=ease((p-.085)/.915);
+      drawAlley(q,{noTriangles:true});
+      const darkPct=ease(clamp(q*1.3));
+
+      // 흰색 후광을 스피어보다 먼저(뒤에) 그림
+      if(darkPct>.5){
+        const t=ease((darkPct-.5)/.5);
+        const haloR=R*.22*2.35;
+        const innerR=R*.22*.5;
+        ctx.save();
+        const halo=ctx.createRadialGradient(W*.5,H*.5,innerR,W*.5,H*.5,haloR);
+        halo.addColorStop(0,`rgba(235,240,255,${.34*t})`);
+        halo.addColorStop(.25,`rgba(220,228,252,${.22*t})`);
+        halo.addColorStop(.55,`rgba(200,215,248,${.10*t})`);
+        halo.addColorStop(1,'rgba(190,210,245,0)');
+        ctx.fillStyle=halo;
+        ctx.beginPath();ctx.arc(W*.5,H*.5,haloR,0,7);ctx.fill();
+        ctx.restore();
+      }
+
+      // 스피어는 후광 위에
+      drawSphere({x:W*.5,y:H*.5,r:R*.22,
+        color:'#f7c85f',darkPct,
+        speed:mix(.8,1.8,q),alpha:1});
+    }
+  }
+
+  // ── SEGMENT 5: 검은→빨강 그라데이션 변화 (T CK[4]..CK[5]) ──────────────
+  // 낙하 없음. 스피어가 오른쪽 아래부터 검정→빨강으로 서서히 물듦
+  // p 0.00–0.55 : 오른쪽 아래부터 빨간 입자 번짐
+  // p 0.55–1.00 : 완전 빨간 스피어 + 꼬리 + 흰 입자 상승
+  else if(T<=CK[5]){
+    const p=t01(5);
+    const R=Math.min(W,H);
+    ctx.fillStyle='#020203'; ctx.fillRect(0,0,W,H);
+    const introEnd=.28;
+
+    if(p<introEnd){
+      const bgFade=1-ease(clamp(p/.10));
+      const weatherFade=1-ease(clamp((p-.10)/.10));
+      const haloFade=1-ease(clamp((p-.20)/.08));
+
+      drawAlley(1,{noTriangles:true,bgAlpha:bgFade,weatherAlpha:weatherFade});
+
+      if(haloFade>0){
+        const haloR=R*.22*2.35;
+        const innerR=R*.22*.5;
+        ctx.save();
+        const halo=ctx.createRadialGradient(W*.5,H*.5,innerR,W*.5,H*.5,haloR);
+        halo.addColorStop(0,`rgba(235,240,255,${.34*haloFade})`);
+        halo.addColorStop(.25,`rgba(220,228,252,${.22*haloFade})`);
+        halo.addColorStop(.55,`rgba(200,215,248,${.10*haloFade})`);
+        halo.addColorStop(1,'rgba(190,210,245,0)');
+        ctx.fillStyle=halo;
+        ctx.beginPath();ctx.arc(W*.5,H*.5,haloR,0,7);ctx.fill();
+        ctx.restore();
+      }
+
+      drawSphere({x:W*.5,y:H*.5,r:R*.22,
+        color:'#0a0a0a',darkPct:1,speed:1.8,alpha:1});
+      return;
     }
 
-    $('openMenuBtn').addEventListener('click', () => {
-      renderMenu();
-      showScreen('menu');
-    });
+    const sp=clamp((p-introEnd)/(1-introEnd));
 
-    $('openRangeBtn').addEventListener('click', () => {
-      renderRangeSettings();
-      showScreen('range');
-    });
+    if(sp<.55){
+      const redPct=ease(sp/.55);
+      drawSphere({x:W*.5,y:H*.5,r:R*.22,
+        color:'#0a0a0a',darkPct:1,redPct,speed:1.8,alpha:1});
+    } else {
+      const q=ease((sp-.55)/.45);
+      const sphereX=W*.5;
+      const sphereY=mix(H*.5, H*.5+R*.22, q);
+      drawSphere({x:sphereX,y:sphereY,r:R*.22,
+        color:'#0a0a0a',darkPct:1,redPct:1,speed:1.8,alpha:1});
+      drawFallingRedTrail(sphereX,sphereY,R*.22,q);
+      ctx.save();
+      for(let wi=0; wi<wind.length; wi++){
+        if(wi % 10 >= 8) continue;
+        const w=wind[wi];
+        w.y-=w.v*mix(4.8,8.2,q);
+        if(w.y<-30){w.y=H+30;w.x=rnd(W)}
+        const br=Math.sin(now*.001+w.x*.003)*.5+.5;
+        ctx.fillStyle=`rgba(${Math.round(mix(200,255,br))},${Math.round(mix(212,255,br))},${Math.round(mix(235,255,br))},${w.a*(.4+q*.6)})`;
+        ctx.beginPath();ctx.arc(w.x,w.y,w.r*(1+q*.5),0,7);ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
 
-    $('openTeamBtn').addEventListener('click', () => {
-      renderTeamSettings();
-      showScreen('team');
-    });
+  // ── SEGMENT 6: New Beginning (T CK[5]..CK[6]) ───────────────────────────
+  // Chapter 5 끝 화면에서 시작해 꼬리 fade out → 입자별 흰색 전환 → 중심 안착
+  else if(T<=CK[6]){
+    const p=t01(6);
+    const R=Math.min(W,H);
+    const tailFade=1-ease(clamp(p/.22));
+    const whitenQ=clamp((p-.24)/.44);
+    const moveQ=ease(clamp((p-.34)/.46));
+    const settleQ=ease(clamp((p-.68)/.32));
+    const starQ=ease(clamp((p-.48)/.52));
 
-    $('backToGameBtn').addEventListener('click', () => {
-      showScreen('game');
-    });
+    ctx.fillStyle='#020203'; ctx.fillRect(0,0,W,H);
+    if(starQ>0) drawStars(mix(.18,1,starQ));
 
-    $('backFromRangeBtn').addEventListener('click', () => {
-      showScreen('menu');
-    });
+    const sphereX=W*.5;
+    const startY=H*.5+R*.22;
+    const startR=R*.22;
+    const passY=mix(startY,H*.28,moveQ);
+    const passR=mix(startR,R*.14,moveQ);
+    const sphereY=mix(passY,H*.5,settleQ);
+    const sphereR=mix(passR,R*.19,settleQ);
 
-    $('backFromTeamBtn').addEventListener('click', () => {
-      showScreen('game');
-    });
+    drawSphere({x:sphereX,y:sphereY,r:sphereR,
+      color:'#0a0a0a',darkPct:1,redPct:1,whitePct:whitenQ,
+      speed:mix(1.8,.55,ease(clamp((p-.18)/.82))),alpha:1});
 
-    $('exitDetailBtn').addEventListener('click', () => {
-      showScreen('game');
-    });
+    if(tailFade>0){
+      ctx.save();
+      ctx.globalAlpha=tailFade;
+      drawFallingRedTrail(sphereX,startY,startR,1);
+      ctx.restore();
+    }
 
-    $('coverPaper').addEventListener('click', () => {
-      revealAnswer();
-    });
+    ctx.save();
+    for(let wi=0; wi<wind.length; wi++){
+      if(wi % 10 >= 8) continue;
+      const w=wind[wi];
+      w.y-=w.v*mix(7.2,3.2,p);
+      if(w.y<-30){w.y=H+30;w.x=rnd(W)}
+      const br=Math.sin(now*.001+w.x*.003)*.5+.5;
+      ctx.fillStyle=`rgba(${Math.round(mix(200,255,br))},${Math.round(mix(212,255,br))},${Math.round(mix(235,255,br))},${w.a*tailFade})`;
+      ctx.beginPath();ctx.arc(w.x,w.y,w.r*(1+p*.35),0,7);ctx.fill();
+    }
+    ctx.restore();
+  }
 
-    $('awardPointBtn').addEventListener('click', showPointOverlay);
-    $('resetTeamsBtn').addEventListener('click', () => {
-      if (!confirm('팀명, 팀원 이름, 점수를 모두 초기화할까요?')) return;
-      resetTeams();
-    });
-    $('resetRangeBtn').addEventListener('click', () => {
-      rangeState = defaultRange();
-      saveRange();
-      renderRangeSettings();
-      showToast('게임범위를 초기화했습니다.');
-    });
-    $('rangeMove').addEventListener('pointerdown', (event) => startRangeDrag(event, 'move'));
-    document.querySelectorAll('.range-handle').forEach((handle) => {
-      handle.addEventListener('pointerdown', (event) => startRangeDrag(event, handle.dataset.handle));
-    });
-    $('finishGameBtn').addEventListener('click', finishGame);
-    $('closeAwardBtn').addEventListener('click', () => {
-      $('awardScreen').classList.remove('show');
-    });
+  // ── SEGMENT 7: Seed (T CK[6]..CK[7]) ────────────────────────────────────
+  else if(T<=CK[7]){
+    drawChapter7Seed(t01(7));
+  }
 
-    document.addEventListener('keydown', (event) => {
-      if (event.key !== 'Escape') return;
-      if (!$('pointOverlay').classList.contains('show')) return;
-      hidePointOverlay();
-    });
+  // ── SEGMENT 8: Sprout (T CK[7]..CK[8]) ──────────────────────────────────
+  else {
+    drawChapter8Sprout(t01(8));
+  }
 
-    $('playHighlight1').addEventListener('click', () => playSong('h1'));
-    $('playHighlight2').addEventListener('click', () => playSong('h2'));
-    $('playFull').addEventListener('click', () => playSong('full'));
+  // Gallery overlay (runs on top of any scene)
+  if(S.gallery) S.galleryProg=Math.min(1,S.galleryProg+dt*.85);
+  else S.galleryProg=Math.max(0,S.galleryProg-dt*1.8);
+  if(S.galleryProg>0) drawGallery(S.galleryProg);
+}
 
-    $('shuffleSongsBtn').addEventListener('click', async () => {
-      if (!confirm('입력한 정답과 음원 파일의 번호를 무작위로 바꿀까요?')) return;
-      await shuffleSongs();
-    });
+// ─── Labels ──────────────────────────────────────────────────────────────────
+function setLabels(){
+  const[t,d]=CHAPTER_INFO[S.chapter-1];
+  $('#chapterSmall').textContent=`Chapter ${String(S.chapter).padStart(2,'0')}`;
+  $('#chapterTitle').textContent=t;
+  $('#chapterDesc').textContent=d;
+  $('#presentationChapter').textContent=S.chapter;
+  $('#presentationTotal').textContent=TOTAL;
+}
 
-    $('exportSongsBtn').addEventListener('click', async () => {
-      await exportSongSettings().catch(() => {
-        showToast('저장값 파일을 만들지 못했습니다.');
-      });
-    });
+// ─── Visitor particle ─────────────────────────────────────────────────────────
+function addVisitorParticle(color){
+  const idx=Math.floor(Math.random()*sphere.length);
+  sphere[idx].special=true; sphere[idx].color=color||S.remoteColor;
+  S.particles.push({color:color||S.remoteColor,at:Date.now()});
+}
 
-    $('importSongsBtn').addEventListener('click', () => {
-      $('importSongsInput').click();
-    });
+// ─── Firebase / room ─────────────────────────────────────────────────────────
+const colors=['#f7c85f','#111111','#bf1830','#f8fbff','#4fd46f','#7dd3fc','#c084fc','#fb923c'];
+function sanitize(v){return String(v||'').replace(/[^A-Z0-9]/gi,'').toUpperCase().slice(0,12)}
+function roomRef(id){return ref(S.db,`rooms/${id}`)}
+function newRoomId(){const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({length:6},()=>a[Math.floor(Math.random()*a.length)]).join('')}
+function show(m){$('#notice').textContent=m}
+function clear(){$('#notice').textContent=''}
+function switchScreen(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(n+'Screen').classList.add('active');S.mode=n}
+function remoteUrl(id){const u=new URL(location.href);u.search='';u.searchParams.set('mode','remote');u.searchParams.set('room',id);return u.toString()}
+function renderQr(text){const box=$('#qrCode');box.innerHTML='';if(window.QRCode)new QRCode(box,{text,width:96,height:96,colorDark:'#000',colorLight:'#fff'});else{const img=document.createElement('img');img.src=`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(text)}`;box.appendChild(img)}}
 
-    $('importSongsInput').addEventListener('change', async () => {
-      const file = $('importSongsInput').files && $('importSongsInput').files[0];
-      $('importSongsInput').value = '';
-      if (!file) return;
-      if (!confirm('현재 메뉴의 정답과 음원을 저장값 파일 내용으로 바꿀까요?')) return;
-      await importSongSettings(file).catch((error) => {
-        showToast(error.message || '저장값을 불러오지 못했습니다.');
-      });
-    });
+function applyChapter(v){
+  const n=Math.max(1,Math.min(TOTAL,parseInt(v)||1));
+  if(n===S.chapter) return setLabels();
+  const wasChapter=S.chapter;
+  S.prevChapter=wasChapter;
+  S.chapter=n;
+  // Target = end of chapter N's checkpoint (fully settled state)
+  S.Tgt=CK[n];
+  // Backward: snap T immediately so we don't animate in reverse
+  if(n<wasChapter) S.T=CK[n];
+  setLabels();
+}
+function applyBlack(v){S.black=!!v;$('#blackout').classList.toggle('active',S.black)}
+function applyImmersive(v){
+  const changed=S.immersive!==!!v;
+  S.immersive=!!v;
+  $('#presentationScreen').classList.toggle('immersive',S.immersive);
+  const btn=$('#toggleFullscreen');if(btn)btn.classList.toggle('active',S.immersive);
+  if(S.mode==='presentation'&&changed){
+    if(v&&!document.fullscreenElement&&document.documentElement.requestFullscreen)
+      document.documentElement.requestFullscreen().catch(()=>{});
+    else if(!v&&document.fullscreenElement&&document.exitFullscreen)
+      document.exitFullscreen().catch(()=>{});
+  }
+}
+function applyGallery(v){S.gallery=!!v;const btn=$('#sphereGallery');if(btn)btn.classList.toggle('active',S.gallery)}
+async function enterPresentationFullscreen(){
+  applyImmersive(true);
+  if(document.documentElement.requestFullscreen && !document.fullscreenElement){
+    await document.documentElement.requestFullscreen().catch(()=>{});
+  }
+  if(S.ready&&S.roomId) write({immersive:true});
+}
+async function exitPresentationFullscreen(){
+  if(document.fullscreenElement && document.exitFullscreen){
+    await document.exitFullscreen().catch(()=>{});
+  }
+  applyImmersive(false);
+  if(S.ready&&S.roomId) write({immersive:false});
+}
+function connected(v){$('#connectionDot').classList.toggle('on',v);$('#connectionText').textContent=v?'연결됨':'대기 중'}
 
-    $('resetBtn').addEventListener('click', async () => {
-      if (!confirm('입력한 정답과 저장된 음원을 모두 지울까요?')) return;
-      await clearAudioStore();
-      metadata = Array.from({ length: SONG_COUNT }, (_, index) => defaultSong(index + 1));
-      saveMetadata();
-      renderMenu();
-      showToast('전체 설정을 초기화했습니다.');
-    });
+function boot(){try{S.db=getDatabase(initializeApp(firebaseConfig));S.ready=true}catch(e){show('Firebase 초기화 실패: '+e.message)}}
+function stopListen(){if(typeof S.unsub==='function')S.unsub();S.unsub=null;connected(false)}
+function listen(id){
+  if(!S.ready||!id)return;
+  stopListen();
+  S.unsub=onValue(roomRef(id),snap=>{
+    const d=snap.val()||{};
+    applyChapter(d.scene||1);
+    applyBlack(d.blackScreen||false);
+    applyImmersive(d.immersive||false);
+    applyGallery(d.gallery||false);
+    if(d.lastParticle?.at&&!S.particles.find(x=>x.at===d.lastParticle.at))
+      addVisitorParticle(d.lastParticle.color);
+    if(d.phoneOrient!=null) S.phoneOffset={x:d.phoneOrient.ox||0,y:d.phoneOrient.oy||0};
+    connected(true);clear();
+  },e=>{connected(false);show('Firebase 읽기 실패: '+e.message)});
+}
+async function write(patch){
+  if(!S.ready||!S.roomId){show('Firebase 연결이 필요합니다.');return}
+  const base={scene:S.chapter,blackScreen:S.black,immersive:S.immersive,gallery:S.gallery,updatedAt:Date.now()};
+  // phoneOffset이 있으면 매 write마다 보존 (다른 이벤트로 덮어씌워지지 않도록)
+  if(S.phoneOffset.x||S.phoneOffset.y) base.phoneOrient={ox:S.phoneOffset.x,oy:S.phoneOffset.y};
+  await set(roomRef(S.roomId),{...base,...patch}).catch(e=>show('저장 실패: '+e.message));
+}
 
-    player.addEventListener('ended', stopAudio);
+async function startPresentation(){
+  switchScreen('presentation');
+  S.roomId=newRoomId();
+  S.T=0; S.Tgt=0; S.chapter=1; S.lastRealTime=performance.now();
+  applyBlack(false);applyImmersive(false);applyGallery(false);
+  setLabels();
+  $('#presentationRoom').textContent=S.roomId;
+  const url=remoteUrl(S.roomId);
+  $('#remoteLink').textContent=url;
+  renderQr(url);
+  history.replaceState({},'',`${location.pathname}?mode=presentation&room=${S.roomId}`);
+  S.phoneOffset={x:0,y:0};
+  if(S.ready){await write({scene:1,blackScreen:false,immersive:false,phoneOrient:null});listen(S.roomId)}
+}
+function startRemote(id=''){
+  switchScreen('remote');
+  const rid=sanitize(id);
+  S.roomId=rid;
+  $('#remoteRoom').textContent=rid||'------';
+  $('#manualRoomCard').style.display=rid?'none':'block';
+  if(rid){history.replaceState({},'',`${location.pathname}?mode=remote&room=${rid}`);listen(rid)}
+  else show('발표 화면의 QR 코드로 접속하거나 Room ID를 입력하세요.');
+}
+function goHome(){stopListen();switchScreen('home');history.replaceState({},'',location.pathname);clear()}
+function newColor(){S.remoteColor=colors[Math.floor(Math.random()*colors.length)];const orb=$('#remoteOrb');if(orb)orb.style.setProperty('--orb',S.remoteColor)}
+async function sendGo(){const ev={color:S.remoteColor,at:Date.now()};addVisitorParticle(ev.color);newColor();if(S.ready&&S.roomId)await write({lastParticle:ev})}
 
-    renderTeamSettings();
-    renderScoreboard();
-    renderPointTeams();
-    applyRange();
-    renderBoard();
-  </script>
+// ─── 폰 방향 추적 (리모컨 전용) ───────────────────────────────────────────────
+let _phoneRef=null, _lastOrient={beta:0,gamma:0}, _orientTimer=null;
+
+// 디바이스 방향 이벤트 수신 (iOS permission 요청 전에도 리스너 등록)
+window.addEventListener('deviceorientation',e=>{
+  if(e.beta==null) return;
+  _lastOrient={beta:e.beta, gamma:e.gamma};
+  if(!_phoneRef) return;
+  // 기준점 대비 델타 계산 → -1~1 정규화 (±30° = 풀 범위)
+  const dg=_lastOrient.gamma - _phoneRef.gamma; // 좌우
+  const db=_lastOrient.beta  - _phoneRef.beta;  // 상하
+  S.phoneOffset={x:clamp(dg/30,-1,1), y:clamp(db/30,-1,1)};
+});
+
+async function calibratePhone(){
+  // iOS 13+ 권한 요청
+  if(typeof DeviceOrientationEvent!=='undefined' &&
+     typeof DeviceOrientationEvent.requestPermission==='function'){
+    try{
+      const perm=await DeviceOrientationEvent.requestPermission();
+      if(perm!=='granted'){show('방향 센서 권한이 필요합니다.');return;}
+    }catch(e){show('권한 요청 실패: '+e.message);return;}
+  }
+  // 센서 데이터 확인
+  if(_lastOrient.beta===0 && _lastOrient.gamma===0){
+    // 아직 이벤트가 도착하지 않았을 경우 잠깐 대기 후 재시도
+    show('센서 초기화 중... 잠시 후 다시 누르세요.');
+    return;
+  }
+  // 현재 위치를 기준점으로 저장
+  _phoneRef={beta:_lastOrient.beta, gamma:_lastOrient.gamma};
+  S.phoneOffset={x:0,y:0};
+  // 주기적으로 Firebase에 방향 전송 (150ms 간격)
+  if(!_orientTimer){
+    _orientTimer=setInterval(()=>{
+      if(S.ready&&S.roomId&&_phoneRef){
+        const ox=+(S.phoneOffset.x||0).toFixed(3);
+        const oy=+(S.phoneOffset.y||0).toFixed(3);
+        write({phoneOrient:{ox,oy}});
+      }
+    },150);
+  }
+  $('#calibrateBtn').classList.add('active');
+  show('위치값 설정 완료! 핸드폰을 움직이면 스피어가 따라옵니다.');
+}
+
+// ─── Event listeners ─────────────────────────────────────────────────────────
+$('#startPresentation').onclick=startPresentation;
+$('#startRemote').onclick=()=>startRemote('');
+$('#homeFromPresentation').onclick=goHome;
+$('#homeFromRemote').onclick=goHome;
+$('#fullScreenButton').onclick=enterPresentationFullscreen;
+$('#previousChapter').onclick=()=>write({scene:Math.max(1,S.chapter-1)});
+$('#nextChapter').onclick=()=>write({scene:Math.min(TOTAL,S.chapter+1)});
+$('#toggleFullscreen').onclick=()=>{
+  const next=!S.immersive;
+  write({immersive:next});
+  if(document.documentElement.requestFullscreen){
+    if(next&&!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+    else if(!next&&document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  }
+};
+$('#sphereGallery').onclick=()=>write({gallery:!S.gallery});
+$('#calibrateBtn').onclick=calibratePhone;
+$('#manualRoomConnect').onclick=()=>startRemote($('#manualRoomInput').value);
+$('#manualRoomInput').onkeydown=e=>{if(e.key==='Enter')startRemote(e.currentTarget.value)};
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape' && S.immersive){exitPresentationFullscreen();return}
+  if(S.mode!=='presentation')return;
+  if(['ArrowRight','PageDown',' '].includes(e.key))write({scene:Math.min(TOTAL,S.chapter+1)});
+  if(['ArrowLeft','PageUp'].includes(e.key))write({scene:Math.max(1,S.chapter-1)});
+  if(e.key.toLowerCase()==='b')write({blackScreen:!S.black});
+  if(e.key.toLowerCase()==='f')write({immersive:!S.immersive});
+});
+document.addEventListener('fullscreenchange',()=>{
+  if(!document.fullscreenElement && S.immersive){
+    applyImmersive(false);
+    if(S.ready&&S.roomId) write({immersive:false});
+  }
+});
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+boot(); resize(); setLabels(); newColor(); render();
+const params=new URLSearchParams(location.search);
+const pmode=params.get('mode'), proom=sanitize(params.get('room'));
+if(pmode==='remote')startRemote(proom);
+else if(pmode==='presentation'&&proom){
+  switchScreen('presentation');S.roomId=proom;
+  $('#presentationRoom').textContent=proom;
+  const url=remoteUrl(proom);$('#remoteLink').textContent=url;renderQr(url);listen(proom);
+}
+</script>
 </body>
 </html>
