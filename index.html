@@ -236,7 +236,7 @@ const S={mode:'home',roomId:'',chapter:1,prevChapter:1,
   Tspeed:1,     // playback speed multiplier while tweening
   lastRealTime:performance.now(),
   black:false,immersive:false,gallery:false,galleryProg:0,db:null,ready:false,unsub:null,remoteColor:'#ffd166',particles:[],
-  lemOff:{bx:0,by:0},phoneOffset:{x:0,y:0}};
+  lemOff:{bx:0,by:0},phoneOffset:{x:0,y:0},phoneOffsetTarget:{x:0,y:0}};
 
 // ─── Particle pools ─────────────────────────────────────────────────────────
 let sphere=[], stars=[], rain=[], wind=[], dust=[];
@@ -368,8 +368,8 @@ function drawSphere(opts={}){
 
   // 렘니스케이트 + 폰 기울기 오프셋 (noFloat:true 옵션으로 비활성화 가능)
   if(opts.noFloat!==true && S.lemOff){
-    cx += S.lemOff.bx * r * 0.028 + clamp(S.phoneOffset.x,-1,1) * r * 0.10;
-    cy += S.lemOff.by * r * 0.028 + clamp(S.phoneOffset.y,-1,1) * r * 0.10;
+    cx += S.lemOff.bx * r * 0.028 + clamp(S.phoneOffset.x,-1,1) * r * 0.15;
+    cy += S.lemOff.by * r * 0.028 + clamp(S.phoneOffset.y,-1,1) * r * 0.15;
   }
 
   const isGold=(goldBoost||(color==='#f7c85f')) && darkPct===0;
@@ -1622,6 +1622,10 @@ function render(){
   const _ld=1+Math.sin(_lt)*Math.sin(_lt);
   S.lemOff={bx:Math.cos(_lt)/_ld, by:Math.sin(_lt)*Math.cos(_lt)/_ld*.45};
 
+  // phoneOffset을 phoneOffsetTarget으로 부드럽게 보간 (500ms 주기 업데이트에 맞춰 글라이딩)
+  S.phoneOffset.x+=(S.phoneOffsetTarget.x-S.phoneOffset.x)*0.06;
+  S.phoneOffset.y+=(S.phoneOffsetTarget.y-S.phoneOffset.y)*0.06;
+
   const T=S.T;
 
   // ── Helper: draw the universal background for a given T ──────────────────
@@ -1942,7 +1946,7 @@ function listen(id){
     applyGallery(d.gallery||false);
     if(d.lastParticle?.at&&!S.particles.find(x=>x.at===d.lastParticle.at))
       addVisitorParticle(d.lastParticle.color);
-    if(d.phoneOrient!=null) S.phoneOffset={x:d.phoneOrient.ox||0,y:d.phoneOrient.oy||0};
+    if(d.phoneOrient!=null) S.phoneOffsetTarget={x:d.phoneOrient.ox||0,y:d.phoneOrient.oy||0};
     connected(true);clear();
   },e=>{connected(false);show('Firebase 읽기 실패: '+e.message)});
 }
@@ -1965,7 +1969,7 @@ async function startPresentation(){
   $('#remoteLink').textContent=url;
   renderQr(url);
   history.replaceState({},'',`${location.pathname}?mode=presentation&room=${S.roomId}`);
-  S.phoneOffset={x:0,y:0};
+  S.phoneOffset={x:0,y:0};S.phoneOffsetTarget={x:0,y:0};
   if(S.ready){await write({scene:1,blackScreen:false,immersive:false,phoneOrient:null});listen(S.roomId)}
 }
 function startRemote(id=''){
@@ -2021,7 +2025,7 @@ async function calibratePhone(){
         const oy=+(S.phoneOffset.y||0).toFixed(3);
         write({phoneOrient:{ox,oy}});
       }
-    },150);
+    },500);
   }
   $('#calibrateBtn').classList.add('active');
   show('위치값 설정 완료! 핸드폰을 움직이면 스피어가 따라옵니다.');
